@@ -19,7 +19,7 @@ fi
 
 toc_tmp_dir="/exlibris/aleph/matyas/toc2load"
 logfile='add_toc.log'
-admin_email='matyas.bajger@osu.cz'
+admin_email='admin@library.somewhere'
 if [ ! -d "$toc_tmp_dir" ]; then	
    echo `date`" - ERROR directory $toc_tmp_dir does not exist!" >>$logfile
    mail -s "add_toc.cgi error -  directory $toc_tmp_dir does not exist!" $admin_email </dev/null
