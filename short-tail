@@ -1,0 +1,72 @@
+<!-- filename: short-tail -->
+....
+....
+
+...
+<!--obalkyknih, informace o dostupnosti dig. objektu
+Nasledujici (java)script vlozit kamkoli do souboru short-tail
+Dale je nutno v short-a-body nastavit element, kde se odkazy zobrazi (napr. v sloupci jednotek): <span id="obalka-$0600"></span>
+      pokud placheolder $0600 obsahuje ISBN apod., jinak zmente dle www_tab_short.cze|eng
+
+Jelikoz rada dig. pristupnych del je starsich a nema ISBN, je vhodne do tohoto placeholdru (zde 600) dostat i cislo Ceske narodni bibliografie, jine standardni cislo nebo EAN (pro zvukove dokumenty):
+a] do tab_expand pridat radek:
+WEB-BRIEF  fix_doc_do_file_08             web_brief_ean2isbn.fix
+WEB-BRIEF  expand_doc_bib_isxn
+
+
+b] tento odkazobany fix ./import/web_brief_ean2isbn.fix ma podobu:
+!-!!!!!-!!-!-!!!-!!!-!!!!!-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 020## ##                 STOP-SCRIPT                    $$a = $$a
+1 0243# ##                 COPY-FIELD                     020  ,L
+1 020## ##                 STOP-SCRIPT                    $$a = $$a
+1 022## ##                 COPY-FIELD                     020  ,L
+1 020## ##                 STOP-SCRIPT                    $$a = $$a
+1 015## ##                 COPY-FIELD                     020  ,L
+1 020## ##                 STOP-SCRIPT                    $$a = $$a
+1 035## ##                 COPY-FIELD                     020  ,L
+
+c] nastaveni web_tab_short.cze (eng) pro placeholder 600  (a vyse zminenou expanzi expand_doc_bib_isxn )
+4 L Obálka                            00 00 0100 S              ## ISB
+-->
+
+<script type="text/javascript">
+var isbnsEl=document.querySelectorAll('span[id^=obalka]');
+var isbns=new Array();
+for (var i=0; i<isbnsEl.length; i++ ) {
+   let x =  isbnsEl[i].getAttribute('id').replace('obalka-','');
+   let isbn=''
+   if (  x.match(/^[0-9]/) ) { //it should be isbn/issn, start with number
+      isbn = { "isbn":  isbnsEl[i].getAttribute('id').replace('obalka-','') }; }
+   else { //other identifier than isbn
+      isbn = { "nbn":  isbnsEl[i].getAttribute('id').replace('obalka-','') }; }
+   isbns.push(isbn);
+   }
+var okURL='https://katalog.osu.cz/cgi-bin/redir.cgi?redd=' + obalkyKnihUrl + '/api/books?multi=' + encodeURI(  JSON.stringify(isbns) );
+var ok=createXMLHttpRequest();
+ok.open('GET',okURL);
+ok.send();
+ok.onreadystatechange = function () {
+   if ( ok.readyState == 4 ) { if ( ok.status  == 200 ) {
+      if ( ok.responseText.trim() == "" ) { console.log('Odpoved API obalkyknih.cz je prazdna'); return 1;}
+      var okr=JSON.parse(ok.responseText);
+      for (var j=0; j<okr.length; j++) {
+        if ( typeof okr[j] == 'undefined' ) { continue; }
+        if ( ! okr[j]  ) { continue; }
+         if ( typeof okr[j].dig_obj != 'undefined' ) {
+            let myDig=okr[j].dig_obj;
+            Object.keys(myDig).forEach(sigla => {
+               var dnntHTML='';
+               if ( sigla=='DNNT' ||  myDig[sigla].public ) {
+                  if (  sigla=='DNNT' ||  myDig[sigla].public=='3' ) { dnntHTML='<img src="&icon_path/lock.png" alt="" title="Přístupný po přihlá~Zení údaji OU">';}
+                  let te=document.getElementById( 'digObj-'+isbns[j].isbn );
+                  if ( ! te ) {  te=(document.getElementById( 'digObj-'+isbns[j].nbn ) || document.createElement('div') );}
+                  te.innerHTML= te.innerHTML + '<br><a href="'+myDig[sigla].url+'">Digitalizovaný dokument'+dnntHTML+'</a>';
+                  te.style.display='';
+                  }
+               } )
+            }
+         }
+      }   }
+   }
+</script>
+...
