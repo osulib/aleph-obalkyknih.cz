@@ -1,5 +1,6 @@
 var obalkyKnih=new Object();
 //pomocne funkce pro ziskani identifikatoru
+//ver 1.3 - pridan dig_obj : link na digitalizovany objekt Kramerius
 var identifiers=new Object;
 identifiers.getISBNs = function() { //najde ISBN (10+13), ISSN i ISMNa, vraci je v poli
    //correction of regex (part for issn), 2016-02-05 
@@ -338,3 +339,78 @@ obalkyKnih.showReviews = function(bookID, reviews) {
       }
    targetEl.show();
    }
+
+
+//ver 1.3 funkce pro zobrazeni odkazu na digitalni objekty Kramerius, vc. DNNT
+obalkyKnih.showDigObj = function(digObj) {
+        var targetEl=document.querySelectorAll('#ob_digobj')[0] ;//tento html element <div id="ob_digobj"></div> umistete na stranku, kde maji byt zobrazeny odkazy na digitalizovane verze
+        if ( targetEl==null ) {console.error('Element pro umisteni odkazy na digitalizovane verze z obalkyknih.cz neexistuje!');return;}
+        //nekolik parametru k zobrazeni:
+        var showDNNT = true ; //true hodnota, pokud zobrazovat DNNT;
+        var homeSigla = '' ; //zpravidla domovska knihovna. Ukazuje se jako prvni a vzdy i v pripade autorizovaneho pristupu
+        var showNonPublicSiglas = []; //pole obsahujici sigly, pro nez bude zobrazovan i autorizovany pristup
+        var linkTextHome = 'Digitalizovan&aacute; verze v na&saron;&iacute; digit&aacute;ln&iacute; knihovn&ecaron;'; //text pro zobrazeni ve vlastni knihovne dle promenne homeSigla
+        var linkTextPublic = 'Digitalizovan&aacute; verze' //text pro public verze v jinych knihovnach
+        var linkTextNonPublic = 'Digitalizovan&aacute; verze - omezen&yacute p&rcaron;&iacutestup'; //text pro public verze v jinych knihovnach
+        var linkTextDnnt = 'Digitalizovan&aacute; verze v knihovn&ecaron; D&ecaron;l nedostupn&yacutech na trhu'; //text pro public verze v jinych knihovnach
+        targetEl.show = function (siglaw,publ,url) { // zobrazi link na FT
+            //TODO preklad sigly pomoci objektu sigla:{ceske_jmeno,anglicke_jmeno}
+            //  var siglas = JSON.parse ( '["siglas":{"ABA001":{"cze":"Národní knihovna ČR","eng":"National Library of the Czech Rep."},"BOA001":{"cze":"Moravská zemská knihovna","eng":"Moravian Library (Brno)"},"OLA001":{"cze":"Vědecká knihovna v Olomouci","eng":"Research Library in Olomouc"},"CBA001":{"cze":"Jihočeská vědecká knihovna","eng":"Research Library of South Bohemia"},"OSA001":{"cze":"Moravskoslezská vědecká knihovna","eng":"Moravian-Silesian Research Library"},"ABA007":{"cze":"Knihovna AV ČR","eng":"Library of the Czech Academy of Sciences"}}]');
+            //
+            var poskytovatel='';
+            switch (siglaw) {
+                case "ABA001":  poskytovatel = ' (poskytovatel: '+"N&aacute;rodn&iacute; knihovna &Ccaron;R"+')'; break;
+                case "BOA001":  poskytovatel = ' (poskytovatel: '+"Moravsk&aacute; zemsk&aacute; knihovna"+')'; break;
+                case "OLA001":  poskytovatel = ' (poskytovatel: '+"V&ecaron;deck&aacute; knihovna v Olomouci"+')'; break;
+                case "CBA001":  poskytovatel = ' (poskytovatel: '+"Jiho&ccaron;esk&aacute; v&ecaron;deck&aacute; knihovna"+')'; break;
+                case "ABA007":  poskytovatel = ' (poskytovatel: '+"Knihovna AV &Ccaron;R"+')'; break;
+                default:  poskytovatel = ' (poskytovatel: '+siglaw+')';
+                }
+            if ( siglaw==homeSigla ) { var showText=linkTextHome; }
+            else if ( siglaw=='DNNT' ) { var showText=linkTextDnnt; }
+            else if ( !publ )  { var showText=linkTextNonPublic+poskytovatel; }
+            else { var showText=linkTextPublic+poskytovatel; }
+            targetEl.innerHTML = targetEl.innerHTML + '<a href="'+url+'" target="_blank">'+showText+'</a><br><br>';// link a text
+//koronavirus 20200122
+            if ( siglaw=='Moravsk&aacute; zemsk&aacute; knihovna' ) {
+               targetEl.innerHTML = targetEl.innerHTML.replace('<br><br>','<br><span style="font-family: Verdana; font-size: 80%;">Po dobu nouzov&eacute;ho stavu je digit&aacute;ln&iacute; knihovna Moravsk&eacute; zemsk&eacute; knihovny zp&rcaron;&iacute;stupn&ecaron;na v pln&eacute;m rozsahu pro studenty V&Scaron; a v&ecaron;deck&eacute; pracovn&iacute;ky.<br>Ignoruje pros&iacute;m upozorn&ecaron;n&iacute;, &zcaron;e dokument nen&iacute; ve&rcaron;ejn&ecaron; p&rcaron;&iacute;stupn&yacute; a zvolte v horn&iacute;m menu vpravo "P&rcaron;ihl&aacute;sit". N&aacute;sledn&ecaron; zvolte tla&ccaron;&iacute;tko "P&rcaron;ihl&aacute;sit knihovn&iacute;m &uacute;&ccaron;tem/EduID", v menu knihoven vyberte Ostravskou univerzitu a p&rcaron;ihlaste se jako do Port&aacute;lu OU.</span><br><br');
+               }
+            else {
+               targetEl.innerHTML = targetEl.innerHTML.replace('<br><br>','<br><span style="font-family: Verdana; font-size: 80%;">Po dobu nouzov&eacute;ho stavu je N&aacute;rodn&iacute; digit&aacute;ln&iacute; knihovna zp&rcaron;&iacute;stupn&ecaron;na v pln&eacute;m rozsahu pro studenty V&Scaron; a v&ecaron;deck&eacute; pracovn&iacute;ky.<br>Ignoruje pros&iacute;m upozorn&ecaron;n&iacute;, &zcaron;e dokument nen&iacute; ve&rcaron;ejn&ecaron; p&rcaron;&iacute;stupn&yacute; a zvolte v horn&iacute;m menu vpravo "P&rcaron;ihl&aacute;sit". N&aacute;sledn&ecaron; zvolte tla&ccaron;&iacute;tko "P&rcaron;ihl&aacute;sit knihovn&iacute;m &uacute;&ccaron;tem/EduID", v menu knihoven vyberte Ostravskou univerzitu a p&rcaron;ihlaste se jako do Port&aacute;lu OU.</span><br><br');
+               }
+            targetEl.innerHTML = targetEl.innerHTML.replace(/^/,'<img src="https://katalog.osu.cz/exlibris/aleph/u23_1/alephe/www_f_cze/icon/f-tn-link.jpg" alt="" title="Digitalizovan&aacute; verze po dobu nouzov&eacute;ho stavu">');
+//koronavirus end
+            targetEl.style.display='';
+            }
+        //homeSigla - domovska knihovna
+        if ( homeSigla.trim() && typeof digObj[homeSigla] != 'undefined' ) {
+            targetEl.show(homeSigla, digObj[homeSigla].public, digObj[homeSigla].url);
+            }
+        //ostatni Kramerie mimo DNNT
+        Object.keys(digObj).forEach(sigla => {
+           if ( sigla!='DNNT' && ( digObj[sigla].public || showNonPublicSiglas.includes(sigla) ) ) {
+                targetEl.show(sigla, digObj[sigla].public, digObj[sigla].url);
+                }
+//koronavirus 20200122
+           else if ( sigla=='ABA001' ) {
+                var uuid='';
+                uuid=digObj[sigla].url.match(/uuid.*$/g);
+                if ( uuid ) {
+                   var covidurl='https://ndk.cz/view/'+uuid[0];
+                   targetEl.show('N&aacute;rodn&iacute; digit&aacute;ln&iacute; knihovna', true, covidurl);
+                   }
+                }
+           else if ( sigla=='BOA001' ) {
+                var uuid='';
+                uuid=digObj[sigla].url.match(/uuid.*$/g);
+                if ( uuid ) {
+                   var covidurl='https://dnnt.mzk.cz/view/'+uuid[0];
+                   targetEl.show('Moravsk&aacute; zemsk&aacute; knihovna', true, covidurl);
+                   }
+                }
+
+//koronavirus end
+            });
+
+
+        }
