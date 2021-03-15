@@ -1,8 +1,9 @@
 #!/bin/csh -f
 #prochazi soubory s OCR obsahy satzenymi z obalkyknih {skript add_toc.cgi) a importuje je do zaznamu
 set bibBase='XXX01' #ver 1.2 jen z teto baze budou importovany soubory
-set dirwithTOCs='some_path' #cesta na soubory, co se maji importovat
-set adminMail="someone@somewhere"
+set dirwithTOCs='/exlibris/aleph/u23_1/alephe/scratch' #cesta na soubory, co se maji importovat
+set mailAddr1="systemlibrarian@library.org" #kam se poslou vysledky - importovane obsahy
+set mailAddr2="catalogers@library.org" #2. adresa pro totez, ponech prazdne, pokud nechces posilat na 2. adresu
 #soubory musi byt pojmenovane: TOC{sysno}.{datum}
 #datum neni povinne, ale jmeno soubory musi zacinat TOC a za tim 9mistne cislo oznacujici sysno v Alephu
 
@@ -11,7 +12,7 @@ set logfile="$alephe_scratch/obalkyknih_toc2load.log"
 set datum=`date +%Y%m%d`
 set bibBaseL=`echo $bibBase | aleph_tr -l`
 set backupfile="$alephe_dev/$bibBaseL/scratch/obalkyknih_toc2load_$datum.backup"
-set recordLimit=42000 #max lenth of record/DOC in Aleph. In versions 16.02-22.0.3, it is 45,000 bytes. !!! However, the check is this script does nor counr CAT fields. as they are not exported by print-03. So this limit should be lower than the real. If the lenght limit is still exceeded, import manage-18 warns and this worn is moved to the toc_import log and mailed. If the limit is exceeded by this setting, imported TOC is cut at its end.
+set recordLimit=43500 #max lenth of record/DOC in Aleph. In versions 16.02-22.0.3, it is 45,000 bytes. !!! However, the check is this script does nor counr CAT fields. as they are not exported by print-03. So this limit should be lower than the real. If the lenght limit is still exceeded, import manage-18 warns and this worn is moved to the toc_import log and mailed. If the limit is exceeded by this setting, imported TOC is cut at its end.
 
 echo "-----------------------------------------------------------" | tee -a $logfile
 echo "start - `date`" | tee -a $logfile
@@ -34,7 +35,7 @@ foreach file ($dirwithTOCs/TOC*)
    endif
    echo "Processing file $file (`date`)" | tee -a $logfile
 #ver 1.2 - vylouci se obsahy z jine baze
-   if ( `echo "$file" | awk '{print substr($0,5,5);}' | grep -c '[A-Z]\{3\}[0-9]\{2\}' | bc` == 1 && `echo "$file" | awk '{print substr($0,5,5);}' | aleph_tr -l` != "$bibBase" ) then
+   if ( `basename "$file" | awk '{print substr($0,5,5);}' | grep -c '[a-zA-Z]\{3\}[0-9]\{2\}' | bc` == 1 && `basename "$file" | awk '{print substr($0,5,5);}' | aleph_tr -l` != "$bibBaseL" ) then
       echo "Note - TOC in file $file does not belong to $bibBase base. skipping..." | tee -a $logfile
       mv $file "$dirwithTOCs/save-$datum/"
       continue
@@ -75,13 +76,19 @@ foreach file ($dirwithTOCs/TOC*)
       echo "Record $sysno ($bibBase) has already a TOC field, skipping." | tee -a $logfile
       #kontrola jestli jednotky nejsou ruzne u videdilnych nebo pokracujicich dokumentu, Identifikujici se pomoci pole Z30-2 (2.ind. = 2 )
       if ( `grep "^$sysno Z30-2" $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp -c | bc` >1 ) then
-         echo "WARNING - record with sysno $sysno has items that look not identical (more volumes, periodic etc.) - it's worthy of a check" | tee -a $logfile
-         printf "\n\nWARNING - record with sysno $sysno has aleady a TOC field, but its items look as not identical (more volumes, periodic etc.) - it's worthy of a check\n\n" >>$alephe_dev/$bibBaseL/scratch/toc2import.warn
+         #20210204 pridana jeste podminka, ze ople TOC uz neni vynulovane
+         if ( `grep '^$sysno TOC   L \$\$a\s*$' $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp -c | bc` >0 ) then
+            echo "WARNING - record with sysno $sysno has items that look not identical (more volumes, periodic etc.) - it's worthy of a check" | tee -a $logfile
+            printf "\n\nWARNING - record with sysno $sysno has aleady a TOC field, but its items look as not identical (more volumes, periodic etc.) - it's worthy of a check\n\n" >>$alephe_dev/$bibBaseL/scratch/toc2import.warn
+         endif
       endif
       #kontrola na isbn v poli 902 - jde o vicesvazkovy zaznam, doplneno 20150612
       if ( `grep "^$sysno 902" $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp -c | bc` >0 ) then
-         echo "WARNING - record with sysno $sysno has already a TOC field, but has ISBN in field 902, looks like multi-vol record - it's worthy of a check" | tee -a $logfile
-         echo "WARNING - record with sysno $sysno has already a TOC field, has ISBN in field 902, looks like multi-vol record - it's worthy of a check" >>$alephe_dev/$bibBaseL/scratch/toc2import.warn
+         #20210204 pridana jeste podminka, ze ople TOC uz neni vynulovane
+         if ( `grep '^$sysno TOC   L \$\$a\s*$' $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp -c | bc` >0 ) then
+            echo "WARNING - record with sysno $sysno has already a TOC field, but has ISBN in field 902, looks like multi-vol record - it's worthy of a check" | tee -a $logfile
+            echo "WARNING - record with sysno $sysno has already a TOC field, has ISBN in field 902, looks like multi-vol record - it's worthy of a check" >>$alephe_dev/$bibBaseL/scratch/toc2import.warn
+         endif
       endif
       mv $file "$dirwithTOCs/save-$datum/"
       continue
@@ -118,32 +125,44 @@ END { print "TOC   L "repeated"$$a"nl; }' >$alephe_dev/$bibBaseL/scratch/obalkyk
    endif
    #kontrola na velikost zaznamu, zaznam v aleph (ver 16.02 - 22.01) nemuze byt delsi nez 4500 znaku bez kodu poli 	
    @ recLength=`awk '{print substr($0,19);}' $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp | wc -c | bc`
-   @ tocLength=`cat $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp | wc -c | bc`
+   #RC 20210315 @ tocLength=`cat $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp | wc -c | bc`
+   @ tocLength=`cat $alephe_dev/$bibBaseL/scratch/toc2import.tmp | wc -c | bc`
+#TODO DEBUG
+echo "DEBUG : recLength is $recLength, tocLength is $tocLength" |  tee -a $logfile
+
+
+#RC 20210315 - whole check of record length has been replace (the followinf if)
    if ( $recLength + $tocLength > $recordLimit ) then
       echo "WARNING - The record $sysno would be longer after the import than allows the limit of the record/doc length - $recordLimit bytes" | tee -a $logfile
-      @ trimmedTOClength = ($recordLimit-$tocLength)
-      while ( `cat $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp | wc -c | bc` > $recordLimit ) 
-         sed '$ s/ [^ ]*$//'  $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp > $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp.trim
+      echo "WARNING - The record $sysno would be longer after the import than allows the limit of the record/doc length - $recordLimit bytes"  >>$alephe_dev/$bibBaseL/scratch/toc2import.warn
+      @ maxTOClength=($recordLimit - $recLength)
+      @ trimmedTOClength=($recordLimit - $tocLength)
+      while ( `cat  $alephe_dev/$bibBaseL/scratch/toc2import.tmp | wc -c | bc` > $maxTOClength ) 
+         sed '$ s/ [^ ]*\s*$//'  $alephe_dev/$bibBaseL/scratch/toc2import.tmp > $alephe_dev/$bibBaseL/scratch/toc2import.tmp.trim
          #the whole field has been ommited, only doc_number and field_code remains. Remove the field - the last line
-         if ( `tail -n1 $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp.trim | wc -c | bc` < 20 ) then
-            head -n -1 $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp.trim >$alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp
+         if ( `tail -n1 $alephe_dev/$bibBaseL/scratch/toc2import.tmp.trim | wc -c | bc` < 20 ) then
+            head -n -1 $alephe_dev/$bibBaseL/scratch/toc2import.tmp.trim >$alephe_dev/$bibBaseL/scratch/toc2import.tmp
          else
-            mv $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp.trim $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp
+            mv $alephe_dev/$bibBaseL/scratch/toc2import.tmp.trim $alephe_dev/$bibBaseL/scratch/toc2import.tmp
          endif       
       end
       if ( `cat $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp | wc -c | bc` < 20 ) then
-         echo "Oops. The record is too long to import any further data. Skipping" | tee -a $logfile
+         echo "Error - Oops. The record is too long to import any further data. Skipping" | tee -a $logfile
       else
-         echo "The TOC has been trimmed at its end to $trimmedTOClength bytes" | tee -a $logfile 
+         echo "The TOC has been trimmed at its end to `cat  $alephe_dev/$bibBaseL/scratch/toc2import.tmp | wc -c | bc` bytes" | tee -a $logfile 
+         echo "     The TOC has been trimmed at its end to `cat  $alephe_dev/$bibBaseL/scratch/toc2import.tmp | wc -c | bc` bytes" >>$alephe_dev/$bibBaseL/scratch/toc2import.warn
       endif
    endif
+#RC 20210315 end
    
    rm -f $alephe_dev/$bibBaseL/obalkyknih_toc2load.awk.tmp
    cat $alephe_dev/$bibBaseL/scratch/toc2import.tmp >>$alephe_dev/$bibBaseL/scratch/toc2import
    #kontrola na vice isbn v souboru - prida alert do logu, doplneno 20150609
    if ( `grep "^$sysno 020" $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp -c | bc` >1 ) then
-      echo "WARNING - record with sysno $sysno has more than one ISBN - it's worthy of a check" | tee -a $logfile
-      echo "WARNING - record with sysno $sysno has more than one ISBN - it's worthy of a check" >>$alephe_dev/$bibBaseL/scratch/toc2import.warn
+      #20210204 pridany hodnoty podpole q do warning hlaseni pro lepsi zpracovani
+      set isbnDesc=`grep "^$sysno 020" $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp | grep -o '\$\$q.*$' | tr -d '\n' `
+      echo "WARNING - record with sysno $sysno has more than one ISBN - it's worthy of a check : $isbnDesc" | tee -a $logfile
+      echo "WARNING - record with sysno $sysno has more than one ISBN - it's worthy of a check : $isbnDesc" >>$alephe_dev/$bibBaseL/scratch/toc2import.warn
    endif
    #kontrola na isbn v poli 902 - jde o vicesvazkovy zaznam, doplneno 20150612
    if ( `grep "^$sysno 902" $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp -c | bc` >0 ) then
@@ -170,16 +189,22 @@ else
    #kontrola na chyby 
    grep -e 'Upozorn' -e 'Error' -e 'Chyba' -i $alephe_scratch/tocs_man18.log >>$alephe_dev/$bibBaseL/scratch/toc2import
    rm -f $alephe_scratch/tocs_man18.log
-   if ( "adminMail" != "" ) then
-      mail -s 'New TOCs from obalkyknih.cz' $adminMail <$alephe_dev/$bibBaseL/scratch/toc2import
+   if ( "$mailAddr1" != "" ) then
+      mail -s 'New TOCs from obalkyknih.cz' $mailAddr1 <$alephe_dev/$bibBaseL/scratch/toc2import
+   endif
+   if ( "$mailAddr2" != "" ) then
+      mail -s 'New TOCs from obalkyknih.cz' $mailAddr2 <$alephe_dev/$bibBaseL/scratch/toc2import
    endif
    if ( -z $alephe_dev/$bibBaseL/scratch/toc2import.reject ) then
       echo "Import seems to be OK, no records were rejected." | tee -a $logfile
    else
       echo "ERROR. The sequent records has been rejected on import:" | tee -a $logfile
       cat $alephe_dev/$bibBaseL/scratch/toc2import.reject | tee -a $logfile
-      if ( "adminMail" != "" ) then
-         mail  -s 'New TOCs from obalkyknih.cz - REJECTED RECORDS' $adminMail <$alephe_dev/$bibBaseL/scratch/toc2import.reject
+      if ( "$mailAddr1" != "" ) then
+         mail  -s 'New TOCs from obalkyknih.cz - REJECTED RECORDS' $mailAddr1 <$alephe_dev/$bibBaseL/scratch/toc2import.reject
+      endif
+      if ( "$mailAddr2" != "" ) then
+         mail  -s 'New TOCs from obalkyknih.cz - REJECTED RECORDS' $mailAddr2 <$alephe_dev/$bibBaseL/scratch/toc2import.reject
       endif
    endif
 endif
