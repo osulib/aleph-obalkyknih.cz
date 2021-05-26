@@ -28,7 +28,7 @@ identifiers.getISBNs = function() { //najde ISBN (10+13), ISSN i ISMNa, vraci je
    for ( i=0; i<isbnF.length; i++ ) {
       var isbn2check = (isbnF[i].replace(/^\s?M\-?/,'979-0-')).replace(/[^\dxX]/g,'');
       var checkSum=0;
-      if ( isbn2check.length == 10 ) { //ISBN-10
+      if ( isbn2check.length == 10 ) {  //ISBN-10
 	 for ( var j=0; j<10; j++ ) checkSum += (10-j) * parseInt(isbn2check.charAt(j).replace(/[xX]/,10));
          if ( checkSum%11!=0 ) { isbnF.splice(i,1); i--; } }
       else if ( isbn2check.length == 13 ) { //ISBN-13, ISMN (10+13)
