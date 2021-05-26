@@ -419,13 +419,13 @@ obalkyKnih.showDigObj = function(digObj) {
 	    else { showText = '<img src="/exlibris/aleph/u23_1/alephe/www_f_cze/icon/f-tn-link.jpg" alt="" title="Digitalizovan&aacute; verze">'+showText; } 
             //ver 1.3.2 logit
             targetEl.innerHTML = targetEl.innerHTML + '<a href="'+url+'" target="_blank" onclick="logit(\''+url+'\');">'+showText+'</a><br><br>';// link a text
-//koronavirus 20200122  - zpristupneni pro VS atd. do 30.6.2021
-            if ( url.indexOf('https://dnnt.mzk.cz/view/')>-1 ) {
-               targetEl.innerHTML = targetEl.innerHTML.replace(/<br><br>\s*$/,'<br><span style="font-family: Verdana; font-size: 80%;">Do 30. &ccaron;ervna 2021 je digit&aacute;ln&iacute; knihovna Moravsk&eacute; zemsk&eacute; knihovny zp&rcaron;&iacute;stupn&ecaron;na v pln&eacute;m rozsahu pro studenty V&Scaron; a v&ecaron;deck&eacute; pracovn&iacute;ky.<br>Ignoruje pros&iacute;m upozorn&ecaron;n&iacute;, &zcaron;e dokument nen&iacute; ve&rcaron;ejn&ecaron; p&rcaron;&iacute;stupn&yacute; a zvolte v horn&iacute;m menu vpravo "P&rcaron;ihl&aacute;sit". N&aacute;sledn&ecaron; zvolte tla&ccaron;&iacute;tko "P&rcaron;ihl&aacute;sit knihovn&iacute;m &uacute;&ccaron;tem/EduID" a p&rcaron;ihlaste se svou domovskou instituc&iacute;.</span><br><br');
-               }
-            else if ( url.indexOf('https://ndk.cz/view/')>-1 ) {
-               targetEl.innerHTML = targetEl.innerHTML.replace(/<br><br>\s*$/,'<br><span style="font-family: Verdana; font-size: 80%;">Do 30. &ccaron;ervna 2021 je N&aacute;rodn&iacute; digit&aacute;ln&iacute; knihovna zp&rcaron;&iacute;stupn&ecaron;na v pln&eacute;m rozsahu pro studenty V&Scaron; a v&ecaron;deck&eacute; pracovn&iacute;ky.<br>Ignoruje pros&iacute;m upozorn&ecaron;n&iacute;, &zcaron;e dokument nen&iacute; ve&rcaron;ejn&ecaron; p&rcaron;&iacute;stupn&yacute; a zvolte v horn&iacute;m menu vpravo "P&rcaron;ihl&aacute;sit". N&aacute;sledn&ecaron; zvolte tla&ccaron;&iacute;tko "P&rcaron;ihl&aacute;sit knihovn&iacute;m &uacute;&ccaron;tem/EduID" a p&rcaron;ihlaste se svou domovskou instituc&iacute;.</span><br><br');
-               }
+//koronavirus 20200122  - zpristupneni pro VS atd. do 30.6.2021 (odkomentuj v pripade potreby)
+//            if ( url.indexOf('https://dnnt.mzk.cz/view/')>-1 ) {
+//               targetEl.innerHTML = targetEl.innerHTML.replace(/<br><br>\s*$/,'<br><span style="font-family: Verdana; font-size: 80%;">Do 30. &ccaron;ervna 2021 je digit&aacute;ln&iacute; knihovna Moravsk&eacute; zemsk&eacute; knihovny zp&rcaron;&iacute;stupn&ecaron;na v pln&eacute;m rozsahu pro studenty V&Scaron; a v&ecaron;deck&eacute; pracovn&iacute;ky.<br>Ignoruje pros&iacute;m upozorn&ecaron;n&iacute;, &zcaron;e dokument nen&iacute; ve&rcaron;ejn&ecaron; p&rcaron;&iacute;stupn&yacute; a zvolte v horn&iacute;m menu vpravo "P&rcaron;ihl&aacute;sit". N&aacute;sledn&ecaron; zvolte tla&ccaron;&iacute;tko "P&rcaron;ihl&aacute;sit knihovn&iacute;m &uacute;&ccaron;tem/EduID" a p&rcaron;ihlaste se svou domovskou instituc&iacute;.</span><br><br');
+//               }
+//            else if ( url.indexOf('https://ndk.cz/view/')>-1 ) {
+//               targetEl.innerHTML = targetEl.innerHTML.replace(/<br><br>\s*$/,'<br><span style="font-family: Verdana; font-size: 80%;">Do 30. &ccaron;ervna 2021 je N&aacute;rodn&iacute; digit&aacute;ln&iacute; knihovna zp&rcaron;&iacute;stupn&ecaron;na v pln&eacute;m rozsahu pro studenty V&Scaron; a v&ecaron;deck&eacute; pracovn&iacute;ky.<br>Ignoruje pros&iacute;m upozorn&ecaron;n&iacute;, &zcaron;e dokument nen&iacute; ve&rcaron;ejn&ecaron; p&rcaron;&iacute;stupn&yacute; a zvolte v horn&iacute;m menu vpravo "P&rcaron;ihl&aacute;sit". N&aacute;sledn&ecaron; zvolte tla&ccaron;&iacute;tko "P&rcaron;ihl&aacute;sit knihovn&iacute;m &uacute;&ccaron;tem/EduID" a p&rcaron;ihlaste se svou domovskou instituc&iacute;.</span><br><br');
+//               }
 //koronavirus end
             targetEl.style.display='';
 	    }
@@ -437,15 +437,15 @@ obalkyKnih.showDigObj = function(digObj) {
 	//ostatni Kramerie 
         Object.keys(digObj).forEach(sigla => {
 	   //koronavirus 20200122 - zpristupneni pro VS atd. do 30.6.2021
-	   if ( ( sigla=='ABA001' || sigla=='BOA001' ) && !Boolean(digObj[sigla].public) ) {
-              var uuid='';
-              uuid=digObj[sigla].url.match(/uuid.*$/g);
-              if ( uuid ) {
-                 if ( sigla=='ABA001' ) { var covidurl='https://ndk.cz/view/'+uuid[0]; }
-                 else { var covidurl='https://dnnt.mzk.cz/view/'+uuid[0]; }
-                 targetEl.show(sigla, true, covidurl, digObj[sigla].library, digObj[sigla].logo);
-                 }
-              }
+	   //if ( ( sigla=='ABA001' || sigla=='BOA001' ) && !Boolean(digObj[sigla].public) ) {
+           //   var uuid='';
+           //   uuid=digObj[sigla].url.match(/uuid.*$/g);
+           //   if ( uuid ) {
+           //      if ( sigla=='ABA001' ) { var covidurl='https://ndk.cz/view/'+uuid[0]; }
+           //      else { var covidurl='https://dnnt.mzk.cz/view/'+uuid[0]; }
+           //      targetEl.show(sigla, true, covidurl, digObj[sigla].library, digObj[sigla].logo);
+           //      }
+           //   }
            //koronavirus end
 	   
 	   if ( ( sigla!='DNNT' && ( digObj[sigla].public || showNonPublicSiglas.includes(sigla) ) ) //not DNNT and ( public or not public set to be viewed)
