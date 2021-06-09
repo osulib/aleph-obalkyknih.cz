@@ -441,7 +441,7 @@ obalkyKnih.showDigObj = function(digObj) {
 
 //ver 1.3.2 logit (logging links)
 function logit(x) {
-  var y=createXMLHttpRequest();
+  var y=new XMLHttpRequest();
   y.open('GET', '/cgi-bin/log_link.cgi?link='+encodeURI(x) );
   y.send();
   }
