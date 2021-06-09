@@ -42,7 +42,7 @@ for (var i=0; i<isbnsEl.length; i++ ) {
    isbns.push(isbn);
    }
 var okURL='https://katalog.osu.cz/cgi-bin/redir.cgi?redd=' + obalkyKnihUrl + '/api/books?multi=' + encodeURI(  JSON.stringify(isbns) );
-var ok=createXMLHttpRequest();
+var ok=new XMLHttpRequest();  
 ok.open('GET',okURL);
 ok.send();
 ok.onreadystatechange = function () {
