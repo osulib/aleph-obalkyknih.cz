@@ -54,7 +54,9 @@ ok.onreadystatechange = function () {
         if ( ! okr[j]  ) { continue; }
          if ( typeof okr[j].dig_obj != 'undefined' ) {
             let myDig=okr[j].dig_obj;
-            Object.keys(myDig).forEach(sigla => {
+//RC20210817 - IE does not know '=> syntax' for forEach method on arrays
+//            Object.keys(myDig).forEach(sigla => {
+              Object.keys(myDig).forEach( function(sigla) {
                var dnntHTML='';
                if ( sigla=='DNNT' ||  myDig[sigla].public ) {
                   if (  sigla=='DNNT' ||  myDig[sigla].public=='3' ) { dnntHTML='<img src="&icon_path/lock.png" alt="" title="Přístupný po přihlá~Zení údaji OU">';}
