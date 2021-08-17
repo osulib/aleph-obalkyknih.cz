@@ -427,7 +427,9 @@ obalkyKnih.showDigObj = function(digObj) {
 	    targetEl.show(homeSigla, digObj[homeSigla].public, digObj[homeSigla].url, digObj[homeSigla].library, digObj[homeSigla].logo);  
 	    }
 	//ostatni Kramerie 
-        Object.keys(digObj).forEach(sigla => {
+//RC20210817 - IE does not know '=> syntax' for forEach method
+//      Object.keys(digObj).forEach(sigla => {
+        Object.keys(digObj).forEach( function(sigla) {
      	   if ( ( sigla!='DNNT' && ( digObj[sigla].public || showNonPublicSiglas.includes(sigla) ) ) //not DNNT and ( public or not public set to be viewed)
                 || (showDNNT && sigla=='DNNT')  //DNNT
               ) {
