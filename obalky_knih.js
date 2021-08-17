@@ -435,7 +435,9 @@ obalkyKnih.showDigObj = function(digObj) {
 	    targetEl.show(homeSigla, digObj[homeSigla].public, digObj[homeSigla].url, digObj[homeSigla].library, digObj[homeSigla].logo);  
 	    }
 	//ostatni Kramerie 
-        Object.keys(digObj).forEach(sigla => {
+//RC20210817 - IE does not know '=> syntax' for forEach method
+//      Object.keys(myDig).forEach(sigla => {
+        Object.keys(digObj).forEach( function(sigla) {
 	   //koronavirus 20200122 - zpristupneni pro VS atd. do 30.6.2021
 	   //if ( ( sigla=='ABA001' || sigla=='BOA001' ) && !Boolean(digObj[sigla].public) ) {
            //   var uuid='';
