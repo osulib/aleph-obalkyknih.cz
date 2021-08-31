@@ -451,7 +451,10 @@ obalkyKnih.showDigObj = function(digObj) {
            //koronavirus end
 	   
 	   if ( ( sigla!='DNNT' && ( digObj[sigla].public || showNonPublicSiglas.includes(sigla) ) ) //not DNNT and ( public or not public set to be viewed)
-                || (showDNNT && sigla=='DNNT')  //DNNT
+               //RC20210831 - show links to DNNT for online available documents only, check new value of "dnnt_labels"
+               //                  dnnt_labels possibla values: dnnto (online available), dnntt (on terminal in library only), covid (not in use)
+               || (showDNNT && sigla=='DNNT' && (digObj[sigla].dnnt_labels || []).includes('dnnto') )  //DNNT - online documents only
+               // || (showDNNT && sigla=='DNNT')  DNNT
                ) {
                 //ver 1.3.2 - library name and logo
 	        targetEl.show(sigla, digObj[sigla].public, digObj[sigla].url, digObj[sigla].library, digObj[sigla].logo);  
