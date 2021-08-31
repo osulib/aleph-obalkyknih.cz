@@ -58,7 +58,10 @@ ok.onreadystatechange = function () {
 //            Object.keys(myDig).forEach(sigla => {
               Object.keys(myDig).forEach( function(sigla) {
                var dnntHTML='';
-               if ( sigla=='DNNT' ||  myDig[sigla].public ) {
+               //RC20210831 - show links to DNNT for online available documents only, check new value of "dnnt_labels"
+               //                  dnnt_labels possibla values: dnnto (online available), dnntt (on terminal in library only), covid (not in use)
+               if ( ( sigla=='DNNT'  ||  myDig[sigla].public ) && (myDig[sigla].dnnt_labels || []).includes('dnnto')  ) { //for dnnt - show online available only
+               //if ( sigla=='DNNT' ||  myDig[sigla].public ) 
                   if (  sigla=='DNNT' ||  myDig[sigla].public=='3' ) { dnntHTML='<img src="&icon_path/lock.png" alt="" title="Přístupný po přihlá~Zení údaji OU">';}
                   let te=document.getElementById( 'digObj-'+isbns[j].isbn );
                   if ( ! te ) {  te=(document.getElementById( 'digObj-'+isbns[j].nbn ) || document.createElement('div') );}
