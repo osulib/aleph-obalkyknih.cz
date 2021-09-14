@@ -8,8 +8,12 @@
 
 
 var obalkyKnih=new Object();
+
 //pomocne funkce pro ziskani identifikatoru
 var identifiers=new Object;
+
+//Dohleda identifikatory na html strance. Hleda v celem dokumentu dle syntaxe ISBN a kontrolniho souctu.
+//   Vylouci ISBN zacinajici vykricnikem - takto by mely byt oznaceny skrze edit* tabulky neplatna ISBN (020 z)
 identifiers.getISBNs = function() { //najde ISBN (10+13), ISSN i ISMNa, vraci je v poli
    //var isbnRegex=new RegExp('(([^\\d](97[8|9][\\- ])?[\\dM][\\d\\- ]{10}[\\- ][\\dxX])|([^\\d](97[8|9])?[\\dM]\\d{8}[\\dXx]))|([^\\d]\\d{4}\\-[\\dxX]{4})[^\\d]','g');
    //correction of regex issn value - 20160205
@@ -17,7 +21,7 @@ identifiers.getISBNs = function() { //najde ISBN (10+13), ISSN i ISMNa, vraci je
    var bodyText=(document.body.textContent || document.body.innerText);
    var isbnF=(bodyText.match(isbnRegex));
    if ( isbnF==null) {return [];}
-   isbnF=identifiers.removeCancelledIds(isbnF,'!',9,17);
+   isbnF=identifiers.removeCancelledIds(isbnF,'!',9,17); // vylouci neplatna ISBN zacinajici vykricnikem
    //get unique values
    isbnF.sort();
    for ( var i=0; i<isbnF.length; i++ ) {
@@ -47,6 +51,7 @@ identifiers.getISBNs = function() { //najde ISBN (10+13), ISSN i ISMNa, vraci je
 //
    return isbnF;
    }
+// z html stranky ziskava cislo OCLC - na zaklade prefixu "(OCoLC)"+cislo.  Neplatna cisla maji opet zacinat vykricnikem a jsou vyloucena.
 identifiers.getOCLCno = function() {
    var oclcF = (document.body.textContent || document.body.innerText).match(/.\(OCoLC\)\d+/g);
    if ( oclcF==null) return [];
@@ -54,6 +59,7 @@ identifiers.getOCLCno = function() {
    if (typeof oclcF == 'string') var oclcF=[oclcF]; 
    return oclcF;
    }
+// z html stranky ziskava cislo CNB - na zaklade prefixu "cnb"+cislo.  Neplatna cisla maji opet zacinat vykricnikem a jsou vyloucena.
 identifiers.getCNB = function() {
    var cnbF = (document.body.textContent || document.body.innerText).match(/.cnb\d+/g);
    if (cnbF==null) return [];
@@ -208,6 +214,7 @@ obalkyKnih.showAnnotation = function(annotation, i) {
    targetEl.style.display='';
    }
 obalkyKnih.showRatingSimple = function(starsURL, backlink) {
+   //jednodussi varianta zobrazeni hodnoceni - jen se pridaji hvezdicky, bez moznosti pridavat nova hodnoceni
    var targetEl=document.querySelectorAll('#ob_rating')[0]; //tento html element <div id="ob_rating"></div> umistete na stranku, kde ma byt zobrazeno hodnoceni 
    if ( targetEl==null ) {console.error('Element pro umisteni hodnoceni z obalkyknih.cz neexistuje!');return;}
    var obRating = document.createElement('a');
@@ -223,6 +230,7 @@ obalkyKnih.showRatingSimple = function(starsURL, backlink) {
    targetEl.style.display='';
    }
 obalkyKnih.showRating = function(bookID,ratingAvg5,rating100,ratingCount) { 
+   // uplna varianta zobrazeni hodnoceni	
    var targetEl=document.querySelectorAll('#ob_rating')[0]; //tento html element <div id="ob_rating"></div> umistete na stranku, kde ma byt zobrazeno hodnoceni
    if ( targetEl==null ) {console.error('Element pro umisteni hodnoceni z obalkyknih.cz neexistuje!');return;}
    ratingAvg5 = ( ratingAvg5>0 && ratingAvg5<=5 ) ? Math.round(ratingAvg5) : 0;
@@ -304,6 +312,7 @@ obalkyKnih.showRating = function(bookID,ratingAvg5,rating100,ratingCount) {
 	targetEl.show();
     }
 obalkyKnih.showReviews = function(bookID, reviews) {
+	//zobrazeni komentaru 
    var targetEl=document.querySelectorAll('#ob_reviews')[0] ;//tento html element <div id="ob_reviews"></div> umistete na stranku, kde maji byt zobrazeny komentare
    if ( targetEl==null ) {console.error('Element pro umisteni komentaru z obalkyknih.cz neexistuje!');return;}
    if ( typeof reviews == 'undefined') {  var reviews=new Object(); } //ver 1.1
@@ -386,7 +395,10 @@ obalkyKnih.showReviews = function(bookID, reviews) {
       }
    targetEl.show();
    }
-obalkyKnih.addOCRtoc = function(toc2send,partRoot) { //ver 1.1
+obalkyKnih.addOCRtoc = function(toc2send,partRoot) { 
+	//stahuje OCR obsahy na server pro pripadny pozdejsi upload do katalog. zaznamu
+	// require: /cgi-bin/add_toc.cgi
+	//ver 1.1
 	var sendTOC=new XMLHttpRequest();
 	sendTOC.param=encodeURI('id='+sysno+'&toc='+toc2send+'&part_root='+partRoot+'&base='+obalkyKnih.base); 
 	sendTOC.open("POST", '/cgi-bin/add_toc.cgi', true);
@@ -395,8 +407,9 @@ obalkyKnih.addOCRtoc = function(toc2send,partRoot) { //ver 1.1
 	sendTOC.setRequestHeader("Connection", "close");
 	sendTOC.send(sendTOC.param);
 	}
-//ver 1.3 funkce pro zobrazeni odkazu na digitalni objekty Kramerius, vc. DNNT
+
 obalkyKnih.showDigObj = function(digObj) {
+	//ver 1.3 funkce pro zobrazeni odkazu na digitalni objekty Kramerius, vc. DNNT
    	var targetEl=document.querySelectorAll('#ob_digobj')[0] ;//tento html element <div id="ob_digobj"></div> umistete na stranku, kde maji byt zobrazeny odkazy na digitalizovane verze
 	if ( targetEl==null ) {console.error('Element pro umisteni odkazy na digitalizovane verze z obalkyknih.cz neexistuje!');return;}
 	//nekolik parametru k zobrazeni:
