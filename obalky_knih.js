@@ -4,6 +4,9 @@
 //ver 1.3.2 - dig_obj: elements "name" and "logo" added to api response, considering the name and logo of a digital library
 //            new logging of clicks to digital objects. function logit() calls new script /cgi-bin/log_link.cgi?link='+encodeURI(x)  
 //            czech characters with diacritic converted to html entities 
+//ver 1.3.3. - dig_obj: support for dnnt_label in API response - for 'dnntt' (Available on terminal / studovna) a message to user is shown. New parameters to set this on/off and view text added.
+//ver 1.3.4. - dig_obj: object dnnt.dnnt_label can have value "covid" that was used during pandemy. If this array has this and only one value, do not show links to DNNT in this cases.
+
 
 
 
@@ -125,7 +128,7 @@ obalkyKnih.ask = function(base) {
 	 else if ( obalkyKnih.request.responseText.indexOf('[{')==-1 && obalkyKnih.request.responseText!='[]') { console.warn('Odpoved API obalkyknih.cz: "'+obalkyKnih.request.responseText+'"  nevypada jako JSON objekt'); }
 	 else {  //ver1.1
             var respt=obalkyKnih.request.responseText; //ver1.1
-	    if ( respt.match(/"[\}]+\]$/) == null ) {  console.warn('Odpoved API se zda byt neuplna. Pokousim se opravit JSON objekt'); respt=respt+'"}]';  obalkyKnih.request.jsonWarn=true; } //ver 1.1
+	      //if ( respt.match(/"[\}]+\]$/) == null ) {  console.warn('Odpoved API se zda byt neuplna. Pokousim se opravit JSON objekt'); respt=respt+'"}]';  obalkyKnih.request.jsonWarn=true; } //ver 1.1, ver 1.3.3 odstraneno, neni potreba a dela dalsi chyby
 	    obalkyKnih.json = JSON.parse(respt); } //ver 1.1
 	 if ( obalkyKnih.json.length==0 ) { return; } 
 	 for (var i=0; i<obalkyKnih.json.length; i++) {
@@ -417,21 +420,26 @@ obalkyKnih.showDigObj = function(digObj) {
         var homeSigla = '' ; //zpravidla domovska knihovna. Ukazuje se jako prvni a vzdy i v pripade autorizovaneho pristupu
         var showNonPublicSiglas = []; //pole obsahujici sigly, pro nez bude zobrazovan i autorizovany pristup
 	var linkTextHome = 'Digitalizovan&aacute; verze v na&saron;&iacute; digit&aacute;ln&iacute; knihovn&ecaron;'; //text pro zobrazeni ve vlastni knihovne dle promenne homeSigla
-        var linkTextPublic = 'Digitalizovan&aacute; verze' //text pro public verze v jinych knihovnach
+        var linkTextPublic = 'Digitalizovan&aacute; verze'; //text pro public verze v jinych knihovnach
         var linkTextNonPublic = 'Digitalizovan&aacute; verze - omezen&yacute p&rcaron;&iacutestup'; //text pro public verze v jinych knihovnach
         var linkTextDnnt = 'Digitalizovan&aacute; verze v knihovn&ecaron; D&ecaron;l nedostupn&yacutech na trhu'; //text pro public verze v jinych knihovnach
-        targetEl.show = function (siglaw,publ,url,library,logo) { // zobrazi link na FT, ver1.3.2. add library name and logo
+	var showDnntTerminal = true; //ver 1.3.3 pokud je true, zobrazi se v opac i dnnt ve verzi terminal/studovna s patricnym upozornenim
+	var dnntTerminalEl = '<br>P&rcaron;&iacute;stup jen ve studovn&aacute;ch PdF, FF a P&rcaron;F <a href="#" class="tipr"><span>Tento dokument spad&aacute; do re&zcaron;mu d&ecaron;l nedostupn&yacute;ch na trhu (DNNT), kter&eacute; je mo&zcaron;n&eacute; zp&rcaron;&iacute;stupnit pouze v prostor&aacute;ch knihovny na ur&ccaron;en&yacute;ch termin&aacute;lech.</span><img alt="?" src="/exlibris/aleph/u23_1/alephe/www_f_cze/icon/question_mark.png" width="15"></a>  '; //ver 1.3.3 upozorneni, pokud je rezim terminal/studovna. Nadefinovat jako kompletni html element, nejen plaintext
+	targetEl.show = function (siglaw,publ,url,library,logo,dnntLabel) { // zobrazi link na FT, ver 1.3.2. add library name and logo
+                                                                  // ver. 1.3.3 new parametr dnntLabel Array added
 	    var poskytovatel='';
             //ver 1.3.2 library name
             if ( library!='') { poskytovatel = ' (poskytovatel: '+library+')'; }
+	    if ( dnntLabel === undefined ) { var dnntLabel=[]; } //ver 1.3.3		
+ 	    if ( dnntLabel.includes('covid') && dnntLabel.length==1 ) {return;} //ver 1.3.4 (do not show links to DNNT designated for pandemy)		
 	    if ( siglaw==homeSigla ) { var showText=linkTextHome; }
 	    else if ( siglaw=='DNNT' ) { var showText=linkTextDnnt; }
 	    else { var showText=linkTextPublic+poskytovatel; }
             //ver 1.3.2 library logo
             if ( logo!='' ) { showText = '<img src="'+logo+'" alt="" style="height: 2em; vertical-align:bottom; margin-right: 0.3em;">'+showText; } //comment this libe out to hide library logo
 	    else { showText = '<img src="/exlibris/aleph/u23_1/alephe/www_f_cze/icon/f-tn-link.jpg" alt="" title="Digitalizovan&aacute; verze">'+showText; } 
-            //ver 1.3.2 logit
-            targetEl.innerHTML = targetEl.innerHTML + '<a href="'+url+'" target="_blank" onclick="logit(\''+url+'\');">'+showText+'</a><br><br>';// link a text
+	    //ver 1.3.2 logit, ver 1.3.3 dnntterminal
+            targetEl.innerHTML = targetEl.innerHTML + '<a href="'+url+'" target="_blank" onclick="logit(\''+url+'\');">'+showText+'</a>' + ( (showDnntTerminal && dnntLabel.includes('dnntt')) ? dnntTerminalEl : '' ) + '<br><br>';// link a text
 //koronavirus 20200122  - zpristupneni pro VS atd. do 30.6.2021 (odkomentuj v pripade potreby)
 //            if ( url.indexOf('https://dnnt.mzk.cz/view/')>-1 ) {
 //               targetEl.innerHTML = targetEl.innerHTML.replace(/<br><br>\s*$/,'<br><span style="font-family: Verdana; font-size: 80%;">Do 30. &ccaron;ervna 2021 je digit&aacute;ln&iacute; knihovna Moravsk&eacute; zemsk&eacute; knihovny zp&rcaron;&iacute;stupn&ecaron;na v pln&eacute;m rozsahu pro studenty V&Scaron; a v&ecaron;deck&eacute; pracovn&iacute;ky.<br>Ignoruje pros&iacute;m upozorn&ecaron;n&iacute;, &zcaron;e dokument nen&iacute; ve&rcaron;ejn&ecaron; p&rcaron;&iacute;stupn&yacute; a zvolte v horn&iacute;m menu vpravo "P&rcaron;ihl&aacute;sit". N&aacute;sledn&ecaron; zvolte tla&ccaron;&iacute;tko "P&rcaron;ihl&aacute;sit knihovn&iacute;m &uacute;&ccaron;tem/EduID" a p&rcaron;ihlaste se svou domovskou instituc&iacute;.</span><br><br');
@@ -464,13 +472,13 @@ obalkyKnih.showDigObj = function(digObj) {
            //koronavirus end
 	   
 	   if ( ( sigla!='DNNT' && ( digObj[sigla].public || showNonPublicSiglas.includes(sigla) ) ) //not DNNT and ( public or not public set to be viewed)
-               //RC20210831 - show links to DNNT for online available documents only, check new value of "dnnt_labels"
+               //ver 1.3.3. RC20210831 - show links to DNNT for online available documents only, check new value of "dnnt_labels"
                //                  dnnt_labels possibla values: dnnto (online available), dnntt (on terminal in library only), covid (not in use)
                || (showDNNT && sigla=='DNNT' && (digObj[sigla].dnnt_labels || []).includes('dnnto') )  //DNNT - online documents only
                // || (showDNNT && sigla=='DNNT')  DNNT
                ) {
-                //ver 1.3.2 - library name and logo
-	        targetEl.show(sigla, digObj[sigla].public, digObj[sigla].url, digObj[sigla].library, digObj[sigla].logo);  
+                //ver 1.3.2 - library name and logo, /ver 1.3.3. dnnt_labels added
+                targetEl.show(sigla, digObj[sigla].public, digObj[sigla].url, digObj[sigla].library, digObj[sigla].logo, (digObj[sigla].dnnt_labels || []) );
 	        }	    
 	    });
         
