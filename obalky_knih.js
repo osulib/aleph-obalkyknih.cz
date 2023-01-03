@@ -6,6 +6,7 @@
 //            czech characters with diacritic converted to html entities 
 //ver 1.3.3. - dig_obj: support for dnnt_label in API response - for 'dnntt' (Available on terminal / studovna) a message to user is shown. New parameters to set this on/off and view text added.
 //ver 1.3.4. - dig_obj: object dnnt.dnnt_label can have value "covid" that was used during pandemy. If this array has this and only one value, do not show links to DNNT in this cases.
+//version 1.3.5 https://github.com/osulib/aleph-obalkyknih.cz/issues/5 - obalkyknih.cz frontend is called using https instead of http
 
 
 
@@ -115,7 +116,9 @@ obalkyKnih.ask = function(base) {
    //volani pres mod_proxy Apache obcas nevratilo nic nebo vratilo neuplnou odpoved (oseklou na konci, nevalidni json objekt]. Matyas Bajger 15.10,2015:q
    //obalkyKnih.url= '/obalky/'+obalkyKnih.domain+'/api/books?multi=' + encodeURIComponent(obalkyKnih.uri_multi);
 //jina mozna varianta presmerovani nez pres mod_apache, tak cgi skriptem   
-   obalkyKnih.url= '/cgi-bin/redir.cgi?redd=' + encodeURI('http://'+obalkyKnih.domain+'/api/books?multi=' + encodeURIComponent(obalkyKnih.uri_multi));
+   //obalkyKnih.url= '/cgi-bin/redir.cgi?redd=' + encodeURI('http://'+obalkyKnih.domain+'/api/books?multi=' + encodeURIComponent(obalkyKnih.uri_multi));   
+   //version 1.3.5	
+   obalkyKnih.url= '/cgi-bin/redir.cgi?redd=' + encodeURI('https://'+obalkyKnih.domain+'/api/books?multi=' + encodeURIComponent(obalkyKnih.uri_multi));
    obalkyKnih.request = new XMLHttpRequest();
    obalkyKnih.request.responseType = 'text'; //ver 1.3 - oprava hlavicky AJAX pro JSON, request je prijiman primarne jako text a pak az json parsovan
    obalkyKnih.request.open('GET',obalkyKnih.url,true);
