@@ -1,5 +1,6 @@
 #!/exlibris/aleph/a22_1/product/bin/perl
 # dohleda zaznamy zmenene v posledni dobe - pocet dnu zpet lze zadat jako parametr pri spusteni. Bez parametru vychozi je 7 dnu. K zaznamum dohledava OCR obsah v obalkyknih.cz
+#version 1.3.5 https://github.com/osulib/aleph-obalkyknih.cz/issues/5 (cache.obalkyknih.cz reqiuires https)
 use strict;
 use warnings;
 use utf8;
@@ -38,7 +39,6 @@ sub sqlQuery {
    my $qrun = $dbh->prepare($query) or die 'ERROR '.DBI->errstr." when preparing sql: $query";
    $qrun->execute or die 'ERROR '.DBI->errstr.' '.$qrun->errstr." in execution of sql: $query";
    my @qAr; my @tmpAr; 
-   while (@tmpAr = $qrun->fetchrow_array()) { push(@qAr,$tmpAr[0]); }
    $dbh->disconnect();
    @qAr;
    }
@@ -66,7 +66,9 @@ foreach (@recentlyChanged) {
       next; }
    #ask obalkyknih.cz
    #my $obURL="http://aleph.osu.cz/obalky/$obDomain/api/books?multi=[{";
-   my $obURL="http://$obDomain/api/books?multi=[{";
+   #my $obURL="http://$obDomain/api/books?multi=[{";
+   #version 1.3.5
+   my $obURL="https://$obDomain/api/books?multi=[{";
    $obURL =~ s/[\n\r]//g;   $obURL =~ s/[\r\n]//g; 
    if ( scalar(@isbns)!=0 && defined $isbns[0] ) { foreach (@isbns) { $obURL .= '%22isbn%22%3A%22'.$_.'%22%2C' ; } }
    if ( scalar(@cnbs)!=0 && defined $cnbs[0] ) { foreach (@cnbs) { $obURL .= '%22nbn%22%3A%22'.$_.'%22%2C' ; } }
