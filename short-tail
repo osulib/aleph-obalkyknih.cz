@@ -41,6 +41,8 @@ for (var i=0; i<isbnsEl.length; i++ ) {
       isbn = { "nbn":  isbnsEl[i].getAttribute('id').replace('obalka-','') }; }
    isbns.push(isbn);
    }
+//var okURL='https://katalog.osu.cz/cgi-bin/redir.cgi?redd=' + obalkyKnihUrl + '/api/books?multi=' + encodeURI(  JSON.stringify(isbns) );
+//version 1.3.5 (https on cache.obalkyknih.cz) - https://github.com/osulib/aleph-obalkyknih.cz/issues/5
 var okURL='https://katalog.osu.cz/cgi-bin/redir.cgi?redd=' + obalkyKnihUrl + '/api/books?multi=' + encodeURI(  JSON.stringify(isbns) );
 var ok=new XMLHttpRequest();  
 ok.open('GET',okURL);
