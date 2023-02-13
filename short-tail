@@ -60,17 +60,35 @@ ok.onreadystatechange = function () {
 //            Object.keys(myDig).forEach(sigla => {
               Object.keys(myDig).forEach( function(sigla) {
                var dnntHTML='';
-               //RC20210831 - show links to DNNT for online available documents only, check new value of "dnnt_labels"
-               //                  dnnt_labels possibla values: dnnto (online available), dnntt (on terminal in library only), covid (not in use)
-               if ( ( sigla=='DNNT'  ||  myDig[sigla].public ) && (myDig[sigla].dnnt_labels || []).includes('dnnto')  ) { //for dnnt - show online available only
-               //if ( sigla=='DNNT' ||  myDig[sigla].public ) 
-                  if (  sigla=='DNNT' ||  myDig[sigla].public=='3' ) { dnntHTML='<img src="&icon_path/lock.png" alt="" title="Přístupný po přihlá~Zení údaji OU">';}
+               //ISSUE #6 RC20230213 API response now does not contain label dnnt_label. DNNT availability os based on 'public' value.  'Public' can contain values:
+               //       0 ... titul dostupný po přihlá~Zení přes eduID(ndkID) - https://dnnt.cz/
+               //       1 ... titul volně přístupný ... bez nutnosti přihlá~Zení (dle autorského        zákona)
+               //       5 ... titul dostupný přes terminál (pouze ve studovnách zapojených knihoven -https://dnnt.cz/)
+               //       9 ... tituly nedostupné ... dostupné pouze v dané knihovně samé
+               //   sigla DNNT has been abolished, no longer in use
+               if ( myDig[sigla].public=='0' )  { //dnnt online
+                  let fturl=myDig[sigla].url;
                   let te=document.getElementById( 'digObj-'+isbns[j].isbn );
-                  if ( ! te ) {  te=(document.getElementById( 'digObj-'+isbns[j].nbn ) || document.createElement('div') );}
-                  te.innerHTML= te.innerHTML + '<br><a href="'+myDig[sigla].url+'">Digitalizovaný dokument'+dnntHTML+'</a>';
+                  if ( ! te )  {  te=(document.getElementById( 'digObj-'+isbns[j].nbn ) || document.createElement('div') );}
+                  te.innerHTML= te.innerHTML + '<br><a href="'+myDig[sigla].url+'" onclick="logit(\''+myDig[sigla].url+'\');">Digitalizovaný dokument<img src="&icon_path/lock.png" alt="" title="Přístupný po přihlái~Zení údaji OU"></a>';
+                  te.style.display='';
+                  }
+               else if ( myDig[sigla].public=='1' ) { //free access
+                  let fturl=myDig[sigla].url;
+                  let te=document.getElementById( 'digObj-'+isbns[j].isbn );
+                  if ( ! te )  {  te=(document.getElementById( 'digObj-'+isbns[j].nbn ) || document.createElement('div') );}
+                  te.innerHTML= te.innerHTML + '<br><a href="'+myDig[sigla].url+'" onclick="logit(\''+myDig[sigla].url+'\');">Digitalizovaný dokument</a>';
+                  te.style.display='';
+                  }
+               else if ( myDig[sigla].public=='5' ) { //dnnt terminal
+                  let fturl=myDig[sigla].url;
+                  let te=document.getElementById( 'digObj-'+isbns[j].isbn );
+                  if ( ! te )  {  te=(document.getElementById( 'digObj-'+isbns[j].nbn ) || document.createElement('div') );}
+                  te.innerHTML= te.innerHTML + '<br><a href="'+myDig[sigla].url+'" onclick="logit(\''+myDig[sigla].url+'\');">Digitalizovaný dokument<a href="#" class="tipr"><span>Tento dokument spadá do re~^imu děl nedostupných na trhu (DNNT), které je mo~^né zpřístupnit pouze v prostorách knihovny na určených terminálech.</span><img alt="?" src="/exlibris/aleph/u23_1/alephe/www_f_cze/icon/question_mark.png" width="15"></a>';
                   te.style.display='';
                   }
                } )
+
             }
          }
       }   }
