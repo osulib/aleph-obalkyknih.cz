@@ -7,6 +7,15 @@
 //ver 1.3.3. - dig_obj: support for dnnt_label in API response - for 'dnntt' (Available on terminal / studovna) a message to user is shown. New parameters to set this on/off and view text added.
 //ver 1.3.4. - dig_obj: object dnnt.dnnt_label can have value "covid" that was used during pandemy. If this array has this and only one value, do not show links to DNNT in this cases.
 //version 1.3.5 https://github.com/osulib/aleph-obalkyknih.cz/issues/5 - obalkyknih.cz frontend is called using https instead of http
+//ver 1.4 - dig_obj: new structure of API response since January 2023:
+//              a] sigla 'DNNT' has been abolished
+//              b] label 'dnnt_label' has been abolsihed
+//              all is now based on
+//              c] new values of label "public"
+//                           0 ... dnnt online
+//                           1 ... free available
+//                           5 ... dnnt terminal (in study room)
+//                           9 ... available in study room(s) of the originial (digitalising) library. No online, no dnnt.
 
 
 
@@ -430,29 +439,44 @@ obalkyKnih.showDigObj = function(digObj) {
 	var dnntTerminalEl = '<br>P&rcaron;&iacute;stup jen ve studovn&aacute;ch PdF, FF a P&rcaron;F <a href="#" class="tipr"><span>Tento dokument spad&aacute; do re&zcaron;mu d&ecaron;l nedostupn&yacute;ch na trhu (DNNT), kter&eacute; je mo&zcaron;n&eacute; zp&rcaron;&iacute;stupnit pouze v prostor&aacute;ch knihovny na ur&ccaron;en&yacute;ch termin&aacute;lech.</span><img alt="?" src="/exlibris/aleph/u23_1/alephe/www_f_cze/icon/question_mark.png" width="15"></a>  '; //ver 1.3.3 upozorneni, pokud je rezim terminal/studovna. Nadefinovat jako kompletni html element, nejen plaintext
 	targetEl.show = function (siglaw,publ,url,library,logo,dnntLabel) { // zobrazi link na FT, ver 1.3.2. add library name and logo
                                                                   // ver. 1.3.3 new parametr dnntLabel Array added
-	    var poskytovatel='';
-            //ver 1.3.2 library name
-            if ( library!='') { poskytovatel = ' (poskytovatel: '+library+')'; }
-	    if ( dnntLabel === undefined ) { var dnntLabel=[]; } //ver 1.3.3		
- 	    if ( dnntLabel.includes('covid') && dnntLabel.length==1 ) {return;} //ver 1.3.4 (do not show links to DNNT designated for pandemy)		
-	    if ( siglaw==homeSigla ) { var showText=linkTextHome; }
-	    else if ( siglaw=='DNNT' ) { var showText=linkTextDnnt; }
-	    else { var showText=linkTextPublic+poskytovatel; }
-            //ver 1.3.2 library logo
+                                                                  // ver 1.4 dnntLabel zase zrusen :]
+            var poskytovatel='';
+            if ( library!='') { poskytovatel = ' (poskytovatel: '+library+')'; } //ver 1.3.2 library name
+            if ( dnntLabel === undefined ) { var dnntLabel=[]; } //ver 1.3.3, ver 1.4 dnnt_label no longer exists in API response; preserved here for code consistency
+            //if ( dnntLabel.includes('covid') && dnntLabel.length==1 ) {return;} //ver 1.3.4 (do not show links to DNNT designated for pandemy)
+            //ver 1.4  promenna publ ma hodnoty dle api response publica
+            //   0 ... titul dostupný po prihlaseni eduID(ndkID) - https://dnnt.cz/
+            //   1 ... titul volne pritupny ... bez nutnosti rihlaseniní (dle autoeho zak.]]
+            //   5 ... titul dostupný res terminal (pouze ve studovnách zapojených knihoven -https://dnnt.cz/)))
+            //   9 ... tituly nedostupné ... dostupné pouze v dané knihe same
+            if ( siglaw==homeSigla ) { var showText=linkTextHome; }
+            else if ( publ=='0' ) { var showText=linkTextDnnt+poskytovatel; }
+            else if ( publ=='1' ) { var showText=linkTextPublic+poskytovatel; }
+            else if ( publ=='5' ) { var showText=linkTextDnnt+poskytovatel; }
+            //ver 1.4 sigla cannot be 'DNNT'  else if ( siglaw=='DNNT' ) { var showText=linkTextDnnt; }
+            else { var showText=linkTextPublic+poskytovatel; }
+            //ver 1.3.2 library logo, logit ; ver 1.3.3 dnntterminal
             if ( logo!='' ) { showText = '<img src="'+logo+'" alt="" style="height: 2em; vertical-align:bottom; margin-right: 0.3em;">'+showText; } //comment this libe out to hide library logo
-	    else { showText = '<img src="/exlibris/aleph/u23_1/alephe/www_f_cze/icon/f-tn-link.jpg" alt="" title="Digitalizovan&aacute; verze">'+showText; } 
-	    //ver 1.3.2 logit, ver 1.3.3 dnntterminal
-            targetEl.innerHTML = targetEl.innerHTML + '<a href="'+url+'" target="_blank" onclick="logit(\''+url+'\');">'+showText+'</a>' + ( (showDnntTerminal && dnntLabel.includes('dnntt')) ? dnntTerminalEl : '' ) + '<br><br>';// link a text
-//koronavirus 20200122  - zpristupneni pro VS atd. do 30.6.2021 (odkomentuj v pripade potreby)
+            else { showText = '<img src="https://katalog.osu.cz/exlibris/aleph/u23_1/alephe/www_f_cze/icon/f-tn-link.jpg" alt="" title="Digitalizovan&aacute; verze">'+showText; }
+
+            //ver 1.4
+            if ( ( publ=='0' && showDNNT ) || publ=='1' || (publ=='5' && showDnntTerminal) || (publ=='9' && siglaw==homeSigla) ) { //show links only for free, dnnt (if set in showDNNT] , dnnt terminal (if set in showDnntTerminal)  and avaliable in home library, if user is in home library]
+               targetEl.innerHTML +=  '<a href="'+url+'" target="_blank" onclick="logit(\''+url+'\');">'+showText+'</a>';
+               if ( publ=='5' ) {targetEl.innerHTML +=  dnntTerminalEl;}
+               else if ( publ=='9' ) { targetEl.innerHTML +=  terminalEl;}
+               targetEl.innerHTML +=  '<br><br>';
+               }
+//
+//koronavirus 20200122  - zpristupneni pro VS atd. do 30.6.2021
 //            if ( url.indexOf('https://dnnt.mzk.cz/view/')>-1 ) {
-//               targetEl.innerHTML = targetEl.innerHTML.replace(/<br><br>\s*$/,'<br><span style="font-family: Verdana; font-size: 80%;">Do 30. &ccaron;ervna 2021 je digit&aacute;ln&iacute; knihovna Moravsk&eacute; zemsk&eacute; knihovny zp&rcaron;&iacute;stupn&ecaron;na v pln&eacute;m rozsahu pro studenty V&Scaron; a v&ecaron;deck&eacute; pracovn&iacute;ky.<br>Ignoruje pros&iacute;m upozorn&ecaron;n&iacute;, &zcaron;e dokument nen&iacute; ve&rcaron;ejn&ecaron; p&rcaron;&iacute;stupn&yacute; a zvolte v horn&iacute;m menu vpravo "P&rcaron;ihl&aacute;sit". N&aacute;sledn&ecaron; zvolte tla&ccaron;&iacute;tko "P&rcaron;ihl&aacute;sit knihovn&iacute;m &uacute;&ccaron;tem/EduID" a p&rcaron;ihlaste se svou domovskou instituc&iacute;.</span><br><br');
+//               targetEl.innerHTML = targetEl.innerHTML.replace(/<br><br>\s*$/,'<br><span style="font-family: Verdana; font-size: 80%;">Do 30. &ccaron;ervna 2021 je digit&aacute;ln&iacute; knihovna Moravsk&eacute; zemsk&eacute; knihovny zp&rcaron;&iacute;stupn&ecaron;na v pln&eacute;m rozsahu pro studenty V&Scaron; a v&ecaron;deck&eacute; pracovn&iacute;ky.<br>Ignoruje pros&iacute;m upozorn&ecaron;n&iacute;, &zcaron;e dokument nen&iacute; ve&rcaron;ejn&ecaron; p&rcaron;&iacute;stupn&yacute; a zvolte v horn&iacute;m menu vpravo "P&rcaron;ihl&aacute;sit". N&aacute;sledn&ecaron; zvolte tla&ccaron;&iacute;tko "P&rcaron;ihl&aacute;sit knihovn&iacute;m &uacute;&ccaron;tem/EduID", v menu knihoven vyberte Ostravskou univerzitu a p&rcaron;ihlaste se jako do Port&aacute;lu OU.</span><br><br');
 //               }
 //            else if ( url.indexOf('https://ndk.cz/view/')>-1 ) {
-//               targetEl.innerHTML = targetEl.innerHTML.replace(/<br><br>\s*$/,'<br><span style="font-family: Verdana; font-size: 80%;">Do 30. &ccaron;ervna 2021 je N&aacute;rodn&iacute; digit&aacute;ln&iacute; knihovna zp&rcaron;&iacute;stupn&ecaron;na v pln&eacute;m rozsahu pro studenty V&Scaron; a v&ecaron;deck&eacute; pracovn&iacute;ky.<br>Ignoruje pros&iacute;m upozorn&ecaron;n&iacute;, &zcaron;e dokument nen&iacute; ve&rcaron;ejn&ecaron; p&rcaron;&iacute;stupn&yacute; a zvolte v horn&iacute;m menu vpravo "P&rcaron;ihl&aacute;sit". N&aacute;sledn&ecaron; zvolte tla&ccaron;&iacute;tko "P&rcaron;ihl&aacute;sit knihovn&iacute;m &uacute;&ccaron;tem/EduID" a p&rcaron;ihlaste se svou domovskou instituc&iacute;.</span><br><br');
+//               targetEl.innerHTML = targetEl.innerHTML.replace(/<br><br>\s*$/,'<br><span style="font-family: Verdana; font-size: 80%;">Do 30. &ccaron;ervna 2021 je N&aacute;rodn&iacute; digit&aacute;ln&iacute; knihovna zp&rcaron;&iacute;stupn&ecaron;na v pln&eacute;m rozsahu pro studenty V&Scaron; a v&ecaron;deck&eacute; pracovn&iacute;ky.<br>Ignoruje pros&iacute;m upozorn&ecaron;n&iacute;, &zcaron;e dokument nen&iacute; ve&rcaron;ejn&ecaron; p&rcaron;&iacute;stupn&yacute; a zvolte v horn&iacute;m menu vpravo "P&rcaron;ihl&aacute;sit". N&aacute;sledn&ecaron; zvolte tla&ccaron;&iacute;tko "P&rcaron;ihl&aacute;sit knihovn&iacute;m &uacute;&ccaron;tem/EduID", v menu knihoven vyberte Ostravskou univerzitu a p&rcaron;ihlaste se jako do Port&aacute;lu OU.</span><br><br');
 //               }
 //koronavirus end
             targetEl.style.display='';
-	    }
+            }
 	//homeSigla - domovska knihovna
 	if ( homeSigla.trim() && typeof digObj[homeSigla] != 'undefined' ) {
             //ver 1.3.2 - library name and logo
@@ -474,20 +498,18 @@ obalkyKnih.showDigObj = function(digObj) {
            //   }
            //koronavirus end
 	   
-	   if ( ( sigla!='DNNT' && ( digObj[sigla].public || showNonPublicSiglas.includes(sigla) ) ) //not DNNT and ( public or not public set to be viewed)
-               //ver 1.3.3. RC20210831 - show links to DNNT for online available documents only, check new value of "dnnt_labels"
-               //                  dnnt_labels possibla values: dnnto (online available), dnntt (on terminal in library only), covid (not in use)
-               || (showDNNT && sigla=='DNNT' && (digObj[sigla].dnnt_labels || []).includes('dnnto') )  //DNNT - online documents only
-               // || (showDNNT && sigla=='DNNT')  DNNT
-               ) {
-                //ver 1.3.2 - library name and logo, /ver 1.3.3. dnnt_labels added
+           // ver 1.4
+           if ( ( digObj[sigla].public=='0' && showDNNT ) || //dnnt online
+                ( digObj[sigla].public=='1' ) || //free available
+                ( digObj[sigla].public=='5' && showDNNT ) || //dnnt terminal (study room)
+                ( digObj[sigla].public=='9' && showNonPublicSiglas.includes(sigla) ) // available in study room of the digialising library only (sigla is mendtioned in settings - array showNonPublicSiglas above
+              ) {
                 targetEl.show(sigla, digObj[sigla].public, digObj[sigla].url, digObj[sigla].library, digObj[sigla].logo, (digObj[sigla].dnnt_labels || []) );
-	        }	    
-	    });
-        
-        
-	}
+                }
+            });
 
+
+        }
 //ver 1.3.2 logit (logging links)
 function logit(x) {
   var y= new XMLHttpRequest();
