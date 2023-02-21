@@ -135,7 +135,7 @@ obalkyKnih.ask = function(base) {
             var respt=obalkyKnih.request.responseText; //ver1.1
 	    //if ( respt.match(/"[\}]+\]$/) == null ) {  console.warn('Odpoved API se zda byt neuplna. Pokousim se opravit JSON objekt'); respt=respt+'"}]';  obalkyKnih.request.jsonWarn=true; } //ver 1.1, ver 1.3.3 odstraneno, neni potreba a dela dalsi chyby
 	    obalkyKnih.json = JSON.parse(respt); } //ver 1.1
-	 if ( obalkyKnih.json.length==0 ) { return; } 
+      if ( obalkyKnih.json.length==0 ) { return; } 
 	 for (var i=0; i<obalkyKnih.json.length; i++) {
 	    var obj=obalkyKnih.json[i];
 	    if ( obalkyKnih.partNameAr[i]!='' && obalkyKnih.partNameAr[i]!=obj.bibinfo.part_name ) {continue;} //pojmenovani casti ve volani api a v jeho odpovedi se neshoduji. obalka muze patrit jine casti dok.
@@ -319,11 +319,14 @@ obalkyKnih.showRating = function(bookID,ratingAvg5,rating100,ratingCount) {
 	targetEl.set=function() { targetEl.comment='Tento dokument jste ji&zcaron; ohodnotili.'; }	
 	targetEl.block=true;
 	targetEl.show();
+        }
+   targetEl.show();
    }
 obalkyKnih.showReviews = function(bookID, reviews) {
    var targetEl=document.querySelectorAll('#ob_reviews')[0] ;//tento html element <div id="ob_reviews"></div> umistete na stranku, kde maji byt zobrazeny komentare
    if ( targetEl==null ) {console.error('Element pro umisteni komentaru z obalkyknih.cz neexistuje!');return;}
    if ( typeof reviews == 'undefined') {  var reviews=new Object(); } //ver 1.1
+   
    targetEl.show=function() {
       while (this.firstChild) this.removeChild(this.firstChild);
       for (var i=0; i<(reviews.length); i++) {
@@ -355,11 +358,13 @@ obalkyKnih.showReviews = function(bookID, reviews) {
          addRev.but.onclick=function() { addRev.style.display='none'; 
 					if ( addRev.ta.value!=addRev.ta.emptyValue && addRev.ta.value.trim()!='') targetEl.set(addRev.ta.value); else addRev.but.style.display='';}
 	 addRev.butC=document.createElement('img'); addRev.butC.src='/obalky_dir/f-cancel.gif'; addRev.butC.setAttribute('alt','Zru&scaron;it');
+         
 	 addRev.butC.style.marginLeft='2em';
          addRev.butC.onclick=function() { addRev.style.display='none'; addRev.but0.style.display='';}
 	 addRev.appendChild(addRev.butC);addRev.appendChild(addRev.but);
 	 this.appendChild(addRev);
 	 addRev.but0=document.createElement('img'); addRev.but0.src='/obalky_dir/f-add-review.gif'; addRev.but0.setAttribute('alt','P&rcaron;idat koment&aacute;&rcaron;'); addRev.but0.style.marginLeft='1em';
+	 
 	 addRev.but0.onclick=function() {addRev.but0.style.display='none'; addRev.style.display='block'; };
 	 this.appendChild(addRev.but0);
       }   
@@ -426,7 +431,7 @@ obalkyKnih.showDigObj = function(digObj) {
         const linkTextDnnt = 'Digitalizovan&aacute; verze v knihovn&ecaron; D&ecaron;l nedostupn&yacute;ch na trhu'; //text pro public verze v jinych knihovnach
         const showDnntTerminal = true; //ver 1.3.3 pokud je true, zobrazi se v opac i dnnt ve verzi terminal/studovna s patricnym upozornenim
         const terminalEl = '<br>P&rcaron;&iacute;stup jen ve studovn&aacute;ch';
-        const dnntTerminalEl = '<br>P&rcaron;&iacute;stup jen ve studovn&aacute;ch. <a href="#" class="tipr"><span>Tento dokument spad&aacute; do re&zcaron;imu d&ecaron;l nedostupn&yacute;ch na trhu (DNNT), kter&eacute; je mo&zcaron;n&eacute; zp&rcaron;&iacute;stupnit pouze v prostor&aacute;ch knihovny na ur&ccaron;en&yacute;ch termin&aacute;lech. ?/span><img alt="?" src="/exlibris/aleph/u23_1/alephe/www_f_cze/icon/question_mark.png" width="15"></a>  '; //ver 1.3.3 upozorneni, pokud je rezim terminal/studovna. Nadefinovat jako kompletni html element, nejen plaintext 
+        const dnntTerminalEl = '<br>P&rcaron;&iacute;stup jen ve studovn&aacute;ch. <a href="#" class="tipr"><span>Tento dokument spad&aacute; do re&zcaron;imu d&ecaron;l nedostupn&yacute;ch na trhu (DNNT), kter&eacute; je mo&zcaron;n&eacute; zp&rcaron;&iacute;stupnit pouze v prostor&aacute;ch knihovny na ur&ccaron;en&yacute;ch termin&aacute;lech.</span><img alt="?" src="/exlibris/aleph/u23_1/alephe/www_f_cze/icon/question_mark.png" width="15"></a>  '; //ver 1.3.3 upozorneni, pokud je rezim terminal/studovna. Nadefinovat jako kompletni html element, nejen plaintext 
         targetEl.show = function (siglaw,publ,url,library,logo,dnntLabel) { // zobrazi link na FT, ver 1.3.2. add library name and logo 
                                                                   // ver. 1.3.3 new parametr dnntLabel Array added         
                                                                   // ver 1.4 dnntLabel zase zrusen :]
