@@ -60,7 +60,7 @@ ok.onreadystatechange = function () {
 //            Object.keys(myDig).forEach(sigla => {
               Object.keys(myDig).forEach( function(sigla) {
                var dnntHTML='';
-               //ISSUE #6 RC20230213 API response now does not contain label dnnt_label. DNNT availability os based on 'public' value.  'Public' can contain values:
+               // ver 1.4 ISSUE #6 https://github.com/osulib/aleph-obalkyknih.cz/issues/6 RC20230213 API response now does not contain label dnnt_label. DNNT availability os based on 'public' value.  'Public' can contain values:
                //       0 ... titul dostupný po přihlá~Zení přes eduID(ndkID) - https://dnnt.cz/
                //       1 ... titul volně přístupný ... bez nutnosti přihlá~Zení (dle autorského        zákona)
                //       5 ... titul dostupný přes terminál (pouze ve studovnách zapojených knihoven -https://dnnt.cz/)
