@@ -6,7 +6,17 @@
 //            czech characters with diacritic converted to html entities 
 //ver 1.3.3. - dig_obj: support for dnnt_label in API response - for 'dnntt' (Available on terminal / studovna) a message to user is shown. New parameters to set this on/off and view text added.
 //ver 1.3.4. - dig_obj: object dnnt.dnnt_label can have value "covid" that was used during pandemy. If this array has this and only one value, do not show links to DNNT in this cases.
-//version 1.3.5 https://github.com/osulib/aleph-obalkyknih.cz/issues/5 - obalkyknih.cz frontend is called using https instead of http
+//ver 1.4 - dig_obj: new structure of API response since January 2023:
+//              a] sigla 'DNNT' has been abolished
+//              b] label 'dnnt_label' has been abolsihed
+//              all is now based on
+//              c] new values of label "public"
+//                           0 ... dnnt online
+//                           1 ... free available
+//                           5 ... dnnt terminal (in study room)
+//                           9 ... available in study room(s) of the originial (digitalising) library. No online, no dnnt.
+
+
 
 
 
@@ -81,7 +91,6 @@ obalkyKnih.setQuery = function(partNote,partName) {
    var isbns=(isbns ? isbns : identifiers.getISBNs()); 
    var oclcs=(oclcs ? oclcs : identifiers.getOCLCno()); 
    var cnbs=(cnbs ? cnbs : identifiers.getCNB());
-   if ( isbns.length+oclcs.length+cnbs.length==0) {return;} 
    if (typeof obalkyKnih.uri_multi === 'undefined' ) { obalkyKnih.uri_multi='[{'; }
    if ( encodeURI(encodeURIComponent(obalkyKnih.uri_multi)).length>7000 ) { console.log('Too many records/items to call obalkyknih.cz API for all of them. Trimming.');return;} //default apache limit for URI length is 8190 chars
    else { obalkyKnih.uri_multi = obalkyKnih.uri_multi.replace(/\}\]\s*$/,'},{'); }
@@ -109,9 +118,7 @@ obalkyKnih.ask = function(base) {
    //volani pres mod_proxy Apache obcas nevratilo nic nebo vratilo neuplnou odpoved (oseklou na konci, nevalidni json objekt]. Matyas Bajger 15.10,2015:q
    //obalkyKnih.url= '/obalky/'+obalkyKnih.domain+'/api/books?multi=' + encodeURIComponent(obalkyKnih.uri_multi);
 //jina mozna varianta presmerovani nez pres mod_apache, tak cgi skriptem   
-   //obalkyKnih.url= '/cgi-bin/redir.cgi?redd=' + encodeURI('http://'+obalkyKnih.domain+'/api/books?multi=' + encodeURIComponent(obalkyKnih.uri_multi)); 
-   //version 1.3.5
-   obalkyKnih.url= '/cgi-bin/redir.cgi?redd=' + encodeURI('https://'+obalkyKnih.domain+'/api/books?multi=' + encodeURIComponent(obalkyKnih.uri_multi));	
+   obalkyKnih.url= '/cgi-bin/redir.cgi?redd=' + encodeURI('https://'+obalkyKnih.domain+'/api/books?multi=' + encodeURIComponent(obalkyKnih.uri_multi));
    obalkyKnih.request = new XMLHttpRequest();
    obalkyKnih.request.responseType = 'text'; //ver 1.3 - oprava hlavicky AJAX pro JSON, request je prijiman primarne jako text a pak az json parsovan
    obalkyKnih.request.open('GET',obalkyKnih.url,true);
@@ -121,10 +128,10 @@ obalkyKnih.ask = function(base) {
 	 obalkyKnih.json = '';
          obalkyKnih.request.jsonWarn=false; //ver 1.1
 	 if ( obalkyKnih.request.responseText.trim() == "" || obalkyKnih.request.responseText.trim() == "[]" ) { console.log('obalkyknih.cz API reponse is empty'); } //ver 1/1
-	 else if ( obalkyKnih.request.responseText.indexOf('[{')==-1 && obalkyKnih.request.responseText!='[]') { console.warn('obalkyknih.cz API reponse : "'+obalkyKnih.request.responseText+'"  does not look like JSON object'); }
+	 else if ( obalkyKnih.request.responseText.indexOf('[{')==-1 && obalkyKnih.request.responseText!='[]') { console.warn('obalkyknih.cz API reponse: "'+obalkyKnih.request.responseText+'"  does not look like JSON object'); }
 	 else {  //ver1.1
             var respt=obalkyKnih.request.responseText; //ver1.1
-            //if ( respt.match(/"[\}]+\]$/) == null ) {  console.warn('obalkyknih.cz API reponse looks uncomplete. Tring to repair JSON object'); respt=respt+'"}]';  obalkyKnih.request.jsonWarn=true; } //ver 1.1 ;  ver 1.3.3 removed. Tjis repair not more needed and it caused other erros sometimes
+	    //if ( respt.match(/"[\}]+\]$/) == null ) {  console.warn('obalkyknih.cz API reponse looks uncomplete. Tring to repair JSON object'); respt=respt+'"}]';  obalkyKnih.request.jsonWarn=true; } //ver 1.1 ;  ver 1.3.3 removed. Tjis repair not more needed and it caused other erros sometimes
 	    obalkyKnih.json = JSON.parse(respt); } //ver 1.1
 	 if ( obalkyKnih.json.length==0 ) { return; } 
 	 for (var i=0; i<obalkyKnih.json.length; i++) {
@@ -176,8 +183,8 @@ obalkyKnih.ask = function(base) {
    }
 //funkce pro zobrazeni ziskanych dat z obalkyknih.cz
 obalkyKnih.showCover = function(coverImg,backlink,i) {
-   var targetEl= document.querySelectorAll('#ob_cover')[i];// tento html element <div id="ob_cover"></div> (nebo jiny html tag s timto atributem id) umistete na stranku, kde ma byt obalka. Pro jednotky se muze jejich vyskyt opakovat.
-   if ( targetEl==null ) {console.error('HTML element for inserting cover from obalkyknih.cz does not exist');return;}
+   const targetEl= document.querySelectorAll('#ob_cover')[i];// tento html element <div id="ob_cover"></div> (nebo jiny html tag s timto atributem id) umistete na stranku, kde ma byt obalka. Pro jednotky se muze jejich vyskyt opakovat.
+   if ( targetEl==null ) {console.error('HTML element for inserting cover from obalkyknih.cz does not exist!');return;}
    var obCover = document.createElement('a');
    obCover.href = backlink;
    obCover.title = 'Show book cover and other information on website obalkyknih.cz';
@@ -187,7 +194,7 @@ obalkyKnih.showCover = function(coverImg,backlink,i) {
    targetEl.style.display='';
    }
 obalkyKnih.showTOC = function(pdfURL, thumbnail, i) {
-   var targetEl= document.querySelectorAll('#ob_toc')[i];//tento html element <div id="ob_toc"></div> (nebo jiny html tag s timto atributem id)  umistete na stranku, kde ma byt nahled a link na obsah
+   const targetEl= document.querySelectorAll('#ob_toc')[i];//tento html element <div id="ob_toc"></div> (nebo jiny html tag s timto atributem id)  umistete na stranku, kde ma byt nahled a link na obsah
    if ( targetEl==null ) {console.error('HTML element for inserting TOC pdf from obalkyknih.cz does not exists!');return;}
    var obTOC = document.createElement('a');
    obTOC.href = pdfURL; 
@@ -204,7 +211,7 @@ obalkyKnih.showTOC = function(pdfURL, thumbnail, i) {
    (document.getElementById('ob_toc_head') || document.createElement('div')).innerHTML='Barcode, cover';
    }
 obalkyKnih.showAnnotation = function(annotation, i) {
-   var targetEl= document.querySelectorAll('#ob_annotation')[i];//tento html element <div id="ob_annotation"></div> umistete na stranku, kde ma byt zobrazena anotace
+   const targetEl= document.querySelectorAll('#ob_annotation')[i];//tento html element <div id="ob_annotation"></div> umistete na stranku, kde ma byt zobrazena anotace
    if ( targetEl==null ) {console.error('HTML element for inserting annotation from obalkyknih.cz does not exist!');return;}
    var obAnn = document.createTextNode( annotation );
    var br = document.createElement('br');
@@ -213,7 +220,7 @@ obalkyKnih.showAnnotation = function(annotation, i) {
    targetEl.style.display='';
    }
 obalkyKnih.showRatingSimple = function(starsURL, backlink) {
-   var targetEl=document.querySelectorAll('#ob_rating')[0]; //tento html element <div id="ob_rating"></div> umistete na stranku, kde ma byt zobrazeno hodnoceni 
+   const targetEl=document.querySelectorAll('#ob_rating')[0]; //tento html element <div id="ob_rating"></div> umistete na stranku, kde ma byt zobrazeno hodnoceni 
    if ( targetEl==null ) {console.error('HTML element for inserting user rating from obalkyknih.cz does not exist!');return;}
    var obRating = document.createElement('a');
    obRating.href = backlink;
@@ -228,7 +235,7 @@ obalkyKnih.showRatingSimple = function(starsURL, backlink) {
    targetEl.style.display='';
    }
 obalkyKnih.showRating = function(bookID,ratingAvg5,rating100,ratingCount) { 
-   var targetEl=document.querySelectorAll('#ob_rating')[0]; //tento html element <div id="ob_rating"></div> umistete na stranku, kde ma byt zobrazeno hodnoceni
+   const targetEl=document.querySelectorAll('#ob_rating')[0]; //tento html element <div id="ob_rating"></div> umistete na stranku, kde ma byt zobrazeno hodnoceni 
    if ( targetEl==null ) {console.error('HTML element for inserting user rating from obalkyknih.cz does not exist!');return;}
    ratingAvg5 = ( ratingAvg5>0 && ratingAvg5<=5 ) ? Math.round(ratingAvg5) : 0;
    targetEl.show = function () {
@@ -280,7 +287,7 @@ obalkyKnih.showRating = function(bookID,ratingAvg5,rating100,ratingCount) {
 	sendRating.setRequestHeader("Content-length", (newRating.length+13) );
 	sendRating.setRequestHeader("Connection", "close");
 	sendRating.timeout=15*1000;
-//	sendRating.ontimeout = function() { targetEl.children[5].innerHTML='Chyba při čtení odpovědi. Prosíme, zkuste přidat hodnocení později.'; }
+//	sendRating.ontimeout = function() { targetEl.children[5].innerHTML='Chyba pĹ™i ÄŤtenĂ­ odpovÄ›di. ProsĂ­me, zkuste pĹ™idat hodnocenĂ­ pozdÄ›ji.'; }
 	sendRating.ontimeout = function() { console.error('Error while reading response from obalkyknih.cz API while sending new review/rating - timeout (15 secs.).'); }
 	sendRating.send('rating_value='+newRating);
 	sendRating.onreadystatechange=function () {
@@ -289,13 +296,13 @@ obalkyKnih.showRating = function(bookID,ratingAvg5,rating100,ratingCount) {
 		console.log('Rating successfully send to obalkyknih.cz');
 		}
 	     else { 
-//		targetEl.comment='Omlouváme se za chybu při přidávání hodnocení. Prosíme, zkuste to později. ';
+//		targetEl.comment='OmlouvĂˇme se za chybu pĹ™i pĹ™idĂˇvĂˇnĂ­ hodnocenĂ­. ProsĂ­me, zkuste to pozdÄ›ji. ';
 //		console.error('Chyba pri pokusu o pridani noveho hodnoceni ('+sendRating.url+'): '+sendRating.responseText);
 		console.log('Rating had been sent to obalkyknih.cz, but this server did not return the confirmation ("ok").');
 		}
 	     }
 	   else if (sendRating.readyState==4 && sendRating.status>=400 ) {
-//		targetEl.comment='Omlouváme se za chybu při přidávání hodnocení. Prosíme, zkuste to později. ';
+//		targetEl.comment='OmlouvĂˇme se za chybu pĹ™i pĹ™idĂˇvĂˇnĂ­ hodnocenĂ­. ProsĂ­me, zkuste to pozdÄ›ji. ';
 		console.error('We apologize for an error eccured during adding your rating. Please, try it later. Http code: '+sendRating.status);
 		}
 	   }
@@ -307,9 +314,11 @@ obalkyKnih.showRating = function(bookID,ratingAvg5,rating100,ratingCount) {
 	targetEl.set=function() { targetEl.comment='You have already added rating to this document.'; }	
 	targetEl.block=true;
 	targetEl.show();
-    }
+        }
+   targetEl.show();
+   }
 obalkyKnih.showReviews = function(bookID, reviews) {
-   var targetEl=document.querySelectorAll('#ob_reviews')[0] ;//tento html element <div id="ob_reviews"></div> umistete na stranku, kde maji byt zobrazeny komentare
+   const targetEl=document.querySelectorAll('#ob_reviews')[0] ;//tento html element <div id="ob_reviews"></div> umistete na stranku, kde maji byt zobrazeny komentare
    if ( targetEl==null ) {console.error('HTML element for inserting user reviews from obalkyknih.cz does not exist!');return;}
    if ( typeof reviews == 'undefined') {  var reviews=new Object(); } //ver 1.1
    targetEl.show=function() {
@@ -347,7 +356,7 @@ obalkyKnih.showReviews = function(bookID, reviews) {
          addRev.butC.onclick=function() { addRev.style.display='none'; addRev.but0.style.display='';}
 	 addRev.appendChild(addRev.butC);addRev.appendChild(addRev.but);
 	 this.appendChild(addRev);
-	 addRev.but0=document.createElement('img'); addRev.but0.src='/obalky_dir/f-add-review.gif'; addRev.but0.setAttribute('alt','Add review'); addRev.but0.style.marginLeft='1em';
+	 addRev.but0=document.createElement('img'); addRev.but0.src='/obalky_dir/f-add-review-eng.gif'; addRev.but0.setAttribute('alt','Add review'); addRev.but0.style.marginLeft='1em';
 	 addRev.but0.onclick=function() {addRev.but0.style.display='none'; addRev.style.display='block'; };
 	 this.appendChild(addRev.but0);
       }   
@@ -367,18 +376,18 @@ obalkyKnih.showReviews = function(bookID, reviews) {
         sendAnniew.onreadystatechange=function () {
            if (sendAnniew.readyState==4 && sendAnniew.status==200 ) {
              if (sendAnniew.responseText.trim()=='ok') {
-		        var rl=reviews.length;
-		        reviews[rl]= {};
-		        reviews[rl].html_text=review;
-		        reviews[rl].created=new Date();
-		        reviews[rl].library_name='by you. Thanks!';
-		        targetEl.show();
-		        }
-	         else { targetEl.showError('We apologize for an error while adding your comment. Please, try it later.');
+		var rl=reviews.length;
+		reviews[rl]= {};
+		reviews[rl].html_text=review;
+		reviews[rl].created=new Date();
+		reviews[rl].library_name='by you. Thanks!';
+		targetEl.show();
+		}
+	     else { targetEl.showError('We apologize for an error while adding your comment. Please, try it later.');
                 console.error('Error while trying to add a new review: ('+sendAnniew.url+'): '+sendAnniew.responseText); }
              }
 	     else if (sendAnniew.readyState==4 && sendAnniew.status>=400 ) {
-                targetEl.showError('We apologize for an error while adding your comment. Please, try it later. ');
+                targetEl.showError('We apologize for an error while adding your comment. Please, try it later.');
                 console.error('Error while trying to add a new review ('+sendAnniew.url+'), http code: '+sendAnniew.status);}
            targetEl.show(); //doplneno 20190412 Matyas Bajger
            }
@@ -402,60 +411,100 @@ obalkyKnih.addOCRtoc = function(toc2send,partRoot) { //ver 1.1
 	}
 //ver 1.3 funkce pro zobrazeni odkazu na digitalni objekty Kramerius, vc. DNNT
 obalkyKnih.showDigObj = function(digObj) {
-   	var targetEl=document.querySelectorAll('#ob_digobj')[0] ;//tento html element <div id="ob_digobj"></div> umistete na stranku, kde maji byt zobrazeny odkazy na digitalizovane verze
-	if ( targetEl==null ) {console.error('HTML Element for inserting links to digital objects from obalkyknih.cz does not exist!');return;}
+   	const targetEl=document.querySelectorAll('#ob_digobj')[0] ;//tento html element <div id="ob_digobj"></div> umistete na stranku, kde maji byt zobrazeny odkazy na digitalizovane verze
+	if ( targetEl==null ) {console.error('Element pro umisteni odkazy na digitalizovane verze z obalkyknih.cz neexistuje!');return;}
 	//nekolik parametru k zobrazeni:
-        var showDNNT = true ; //true hodnota, pokud zobrazovat DNNT; 
-        var homeSigla = '' ; //zpravidla domovska knihovna. Ukazuje se jako prvni a vzdy i v pripade autorizovaneho pristupu
-        var showNonPublicSiglas = []; //pole obsahujici sigly, pro nez bude zobrazovan i autorizovany pristup
-	var linkTextHome = 'Digitalised version in our digital library'; //text pro zobrazeni ve vlastni knihovne dle promenne homeSigla
-        var linkTextPublic = 'Digitalised version' //text pro public verze v jinych knihovnach
-        var linkTextNonPublic = 'Digitalised version - restricted access'; //text pro public verze v jinych knihovnach
-        var linkTextDnnt = 'Digitalised version - restricted access (Works not available at the market)'; //text pro public verze v jinych knihovnach
-	var showDnntTerminal = true; //ver 1.3.3 pokud je true, zobrazi se v opac i dnnt ve verzi terminal/studovna s patricnym upozornenim
-        var dnntTerminalEl = '<br>Accesible in study rooms only.<a href="#" class="tipr"><span>The document can be viewed in Faculty of Arts study room, Faculty of Education study room, and Faculty of Science study room. As to its license with copyright holders, it belongs to works that cannot be available online, but only at dedicated terminals in the library.</span><img alt="?" src="/exlibris/aleph/u23_1/alephe/www_f_cze/icon/question_mark.png" width="15"></a>  '; //ver 1.3.3 upozorneni, pokud je rezim terminal/studovna. Nadefinovat jako kompletni html element, nejen plaintext
+        const showDNNT = true ; //true hodnota, pokud zobrazovat DNNT; 
+        const homeSigla = '' ; //zpravidla domovska knihovna. Ukazuje se jako prvni a vzdy i v pripade autorizovaneho pristupu
+        const showNonPublicSiglas = []; //pole obsahujici sigly, pro nez bude zobrazovan i autorizovany pristup
+	const linkTextHome = 'Digitalised version in our digital library;'; //text pro zobrazeni ve vlastni knihovne dle promenne homeSigla
+        const linkTextPublic = 'Digitalised version' //text pro public verze v jinych knihovnach
+        const linkTextNonPublic = 'Digitalised version - limited access'; //text pro public verze v jinych knihovnach
+        const linkTextDnnt = 'Digitalised version in library of books not available on market (limited access)'; //text pro public verze v jinych knihovnach
+        const showDnntTerminal = true; //ver 1.3.3 pokud je true, zobrazi se v opac i dnnt ve verzi terminal/studovna s patricnym upozornenim
+        const dnntTerminalEl = '<br>Accesible in study rooms only.<a href="#" class="tipr"><span>The document can be viewed in Faculty of Arts study room, Faculty of Education study room, and Faculty of Science study room. As to its license with copyright holders, it belongs to works that cannot be available online, but only at dedicated terminals in the library.</span><img alt="?" src="/exlibris/aleph/u23_1/alephe/www_f_cze/icon/question_mark.png" width="15"></a>  '; //ver 1.3.3 upozorneni, pokud je rezim terminal/studovna. Nadefinovat jako kompletni html element, nejen plaintext
+
         targetEl.show = function (siglaw,publ,url,library,logo,dnntLabel) { // zobrazi link na FT, ver1.3.2. add library name and logo
                                                                   // ver. 1.3.3 new parametr dnntLabel Array added
-	    var poskytovatel='';
-            //ver 1.3.2 library name
-            if ( library!='') { poskytovatel = ' (provider: '+library+')'; }
-	    if ( dnntLabel === undefined ) { var dnntLabel=[]; } //ver 1.3.3
-            if ( dnntLabel.includes('covid') && dnntLabel.length==1 ) {return;} //ver 1.3.4 (do not show links to DNNT designated for pandemy)
-	    if ( siglaw==homeSigla ) { var showText=linkTextHome; }
-	    else if ( siglaw=='DNNT' ) { var showText=linkTextDnnt; }
-	    else { var showText=linkTextPublic+poskytovatel; }
-            //ver 1.3.2 library logo
+                                                                  // ver 1.4 dnntLabel zase zrusen :]
+            var poskytovatel='';
+            if ( library!='') { poskytovatel = ' (provider: '+library+')'; } //ver 1.3.2 library name
+            if ( dnntLabel === undefined ) { var dnntLabel=[]; } //ver 1.3.3, ver 1.4 dnnt_label no longer exists in API response; preserved here for code consistency
+            //if ( dnntLabel.includes('covid') && dnntLabel.length==1 ) {return;} //ver 1.3.4 (do not show links to DNNT designated for pandemy)
+            //ver 1.4  promenna publ ma hodnoty dle api response publica
+            //   0 ... titul dostupnĂ˝ po prihlaseni eduID(ndkID) - https://dnnt.cz/
+            //   1 ... titul volne pritupny ... bez nutnosti rihlaseninĂ­ (dle autoeho zak.]]
+            //   5 ... titul dostupnĂ˝ res terminal (pouze ve studovnĂˇch zapojenĂ˝ch knihoven -https://dnnt.cz/)))
+            //   9 ... tituly nedostupnĂ© ... dostupnĂ© pouze v danĂ© knihe same
+            if ( siglaw==homeSigla ) { var showText=linkTextHome; }
+            else if ( publ=='0' ) { var showText=linkTextDnnt+poskytovatel; }
+            else if ( publ=='1' ) { var showText=linkTextPublic+poskytovatel; }
+            else if ( publ=='5' ) { var showText=linkTextDnnt+poskytovatel; }
+            //ver 1.4 sigla cannot be 'DNNT'  else if ( siglaw=='DNNT' ) { var showText=linkTextDnnt; }
+            else { var showText=linkTextPublic+poskytovatel; }
+            //ver 1.3.2 library logo, logit ; ver 1.3.3 dnntterminal
             if ( logo!='' ) { showText = '<img src="'+logo+'" alt="" style="height: 2em; vertical-align:bottom; margin-right: 0.3em;">'+showText; } //comment this libe out to hide library logo
-	    else { showText = '<img src="/exlibris/aleph/u23_1/alephe/www_f_cze/icon/f-tn-link.jpg" alt="" title="Digitalised version">'+showText; } 
-            //ver 1.3.2 logit, ver 1.3.3 dnntterminal
-            targetEl.innerHTML = targetEl.innerHTML + '<a href="'+url+'" target="_blank" onclick="logit(\''+url+'\');">'+showText+'</a>' + ( (showDnntTerminal && dnntLabel.includes('dnntt')) ? dnntTerminalEl : '' ) + '<br><br>';// link a text
+            else { showText = '<img src="/exlibris/aleph/u23_1/alephe/www_f_cze/icon/f-tn-link.jpg" alt="" title="Digitalizovan&aacute; verze">'+showText; }
+
+            //ver 1.4
+            if ( ( publ=='0' && showDNNT ) || publ=='1' || (publ=='5' && showDnntTerminal) || (publ=='9' && siglaw==homeSigla) ) { //show links only for free, dnnt (if set in showDNNT] , dnnt terminal (if set in showDnntTerminal)  and avaliable in home library, if user is in home library]
+               targetEl.innerHTML +=  '<a href="'+url+'" target="_blank" onclick="logit(\''+url+'\');">'+showText+'</a>';
+               if ( publ=='5' ) {targetEl.innerHTML +=  dnntTerminalEl;}
+               else if ( publ=='9' ) { targetEl.innerHTML +=  terminalEl;}
+               targetEl.innerHTML +=  '<br><br>';
+               }
+//
+//koronavirus 20200122  - zpristupneni pro VS atd. do 30.6.2021
+//            if ( url.indexOf('https://dnnt.mzk.cz/view/')>-1 ) {
+//               targetEl.innerHTML = targetEl.innerHTML.replace(/<br><br>\s*$/,'<br><span style="font-family: Verdana; font-size: 80%;">Do 30. &ccaron;ervna 2021 je digit&aacute;ln&iacute; knihovna Moravsk&eacute; zemsk&eacute; knihovny zp&rcaron;&iacute;stupn&ecaron;na v pln&eacute;m rozsahu pro studenty V&Scaron; a v&ecaron;deck&eacute; pracovn&iacute;ky.<br>Ignoruje pros&iacute;m upozorn&ecaron;n&iacute;, &zcaron;e dokument nen&iacute; ve&rcaron;ejn&ecaron; p&rcaron;&iacute;stupn&yacute; a zvolte v horn&iacute;m menu vpravo "P&rcaron;ihl&aacute;sit". N&aacute;sledn&ecaron; zvolte tla&ccaron;&iacute;tko "P&rcaron;ihl&aacute;sit knihovn&iacute;m &uacute;&ccaron;tem/EduID", v menu knihoven vyberte Ostravskou univerzitu a p&rcaron;ihlaste se jako do Port&aacute;lu OU.</span><br><br');
+//               }
+//            else if ( url.indexOf('https://ndk.cz/view/')>-1 ) {
+//               targetEl.innerHTML = targetEl.innerHTML.replace(/<br><br>\s*$/,'<br><span style="font-family: Verdana; font-size: 80%;">Do 30. &ccaron;ervna 2021 je N&aacute;rodn&iacute; digit&aacute;ln&iacute; knihovna zp&rcaron;&iacute;stupn&ecaron;na v pln&eacute;m rozsahu pro studenty V&Scaron; a v&ecaron;deck&eacute; pracovn&iacute;ky.<br>Ignoruje pros&iacute;m upozorn&ecaron;n&iacute;, &zcaron;e dokument nen&iacute; ve&rcaron;ejn&ecaron; p&rcaron;&iacute;stupn&yacute; a zvolte v horn&iacute;m menu vpravo "P&rcaron;ihl&aacute;sit". N&aacute;sledn&ecaron; zvolte tla&ccaron;&iacute;tko "P&rcaron;ihl&aacute;sit knihovn&iacute;m &uacute;&ccaron;tem/EduID", v menu knihoven vyberte Ostravskou univerzitu a p&rcaron;ihlaste se jako do Port&aacute;lu OU.</span><br><br');
+//               }
+//koronavirus end
             targetEl.style.display='';
-	    }
+            }
 	//homeSigla - domovska knihovna
 	if ( homeSigla.trim() && typeof digObj[homeSigla] != 'undefined' ) {
+
             //ver 1.3.2 - library name and logo
 	    targetEl.show(homeSigla, digObj[homeSigla].public, digObj[homeSigla].url, digObj[homeSigla].library, digObj[homeSigla].logo);  
 	    }
 	//ostatni Kramerie 
 //RC20210817 - IE does not know '=> syntax' for forEach method
-//      Object.keys(digObj).forEach(sigla => {
+////           - object name 'myDig' is wrong, chnaged to 'digObj'
+////      Object.keys(myDig).forEach(sigla => {
         Object.keys(digObj).forEach( function(sigla) {
-           if ( ( sigla!='DNNT' && ( digObj[sigla].public || showNonPublicSiglas.includes(sigla) ) ) //not DNNT and ( public or not public set to be viewed)
-               //ver 1.3.3. RC20210831 - show links to DNNT for online available documents only, check new value of "dnnt_labels"
-               //                  dnnt_labels possibla values: dnnto (online available), dnntt (on terminal in library only), covid (not in use)
-               //|| (showDNNT && sigla=='DNNT' && (digObj[sigla].dnnt_labels || []).includes('dnnto') )  //DNNT - online documents only
-               || (showDNNT && sigla=='DNNT')  //DNNT - both online and terminal documents only
-               ) {
-                //ver 1.3.2 - library name and logo; /ver 1.3.3. dnnt_labels added
-                targetEl.show(sigla, digObj[sigla].public, digObj[sigla].url, digObj[sigla].library, digObj[sigla].logo, (digObj[sigla].dnnt_labels || []) );	        }	    
-	    });
-        
-        
-	}
+	   //koronavirus 20200122 - zpristupneni pro VS atd. do 30.6.2021
+	   //if ( ( sigla=='ABA001' || sigla=='BOA001' ) && !Boolean(digObj[sigla].public) ) {
+           //   var uuid='';
+           //   uuid=digObj[sigla].url.match(/uuid.*$/g);
+           //   if ( uuid ) {
+           //      if ( sigla=='ABA001' ) { var covidurl='https://ndk.cz/view/'+uuid[0]; }
+           //      else { var covidurl='https://dnnt.mzk.cz/view/'+uuid[0]; }
+           //      targetEl.show(sigla, true, covidurl, digObj[sigla].library, digObj[sigla].logo);
+           //      }
+           //   }
+           //koronavirus end
+
+
+           // ver 1.4
+           if ( ( digObj[sigla].public=='0' && showDNNT ) || //dnnt online
+                ( digObj[sigla].public=='1' ) || //free available
+                ( digObj[sigla].public=='5' && showDNNT ) || //dnnt terminal (study room)
+                ( digObj[sigla].public=='9' && showNonPublicSiglas.includes(sigla) ) // available in study room of the digialising library only (sigla is mendtioned in settings - array showNonPublicSiglas above
+              ) {
+                targetEl.show(sigla, digObj[sigla].public, digObj[sigla].url, digObj[sigla].library, digObj[sigla].logo, (digObj[sigla].dnnt_labels || []) );
+                }
+            });
+
+
+        }
 
 //ver 1.3.2 logit (logging links)
 function logit(x) {
-  var y=new XMLHttpRequest();
+  var y=createXMLHttpRequest();
   y.open('GET', '/cgi-bin/log_link.cgi?link='+encodeURI(x) );
   y.send();
   }
+
