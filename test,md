@@ -1,0 +1,7 @@
+# Aleph - Registrace čtenáře online ověřením Bankovní Identititou (BankId)
+
+Rozšíření pro online registraci a prodloužení registrace v systému ALEPH, kdy jsou získány ověřené údaje čtenáře pomocí [Bankovní identity - BankId](https://www.bankid.cz/). Pomocí tlačítka/odkazu na www stránkácH, OPACu apod. je čtenář nasměrován na BankID. Zde při úspěšném ověření jsou získány jeho osobní údaje a předány backend skriptu (cgi perl) k zpracování. Zde se ověří, zda je čtenář nový, je již registrován (a má vypršenou nebo končící registraci), příp. vol
+
+toto `je` kod
+> pip
+> ppiip
