@@ -1,11 +1,15 @@
 #!/bin/csh -f
 #prochazi soubory s OCR obsahy satzenymi z obalkyknih {skript add_toc.cgi) a importuje je do zaznamu
-set bibBase='XXX01' #ver 1.2 jen z teto baze budou importovany soubory
-set dirwithTOCs='/exlibris/aleph/u23_1/alephe/scratch' #cesta na soubory, co se maji importovat
-set mailAddr1="systemlibrarian@library.org" #kam se poslou vysledky - importovane obsahy
-set mailAddr2="catalogers@library.org" #2. adresa pro totez, ponech prazdne, pokud nechces posilat na 2. adresu
+set bibBase='OSU01' #ver 1.2 jen z teto baze budou importovany soubory
+set dirwithTOCs='/exlibris/aleph/matyas/toc2load' #cesta na soubory, co se maji importovat
+set mailAddr1="katalogizace@osu.cz" #kam se poslou vysledky - importovane obsahy
+set mailAddr2="matyas.bajger@osu.cz" #2. adresa pro totez, ponech prazdne, pokud nechces posilat na 2. adresu
 #soubory musi byt pojmenovane: TOC{sysno}.{datum}
 #datum neni povinne, ale jmeno soubory musi zacinat TOC a za tim 9mistne cislo oznacujici sysno v Alephu
+
+#ver 1.3 OCR obsahy jsou casto double encodovane utf. Pomoci externiho perl s/replace skriptu se jednotlive znaky anharzuji.
+#ver 1.4 Lze vyloucit urcitou jednu logickou bazi v poli BAS, do niz obsahz nebudou pridavany. Jeji jmeno definovano nize v promenne basw2exclude. 20230120
+#ver 1.4.1 20240801 plneni promenne set isbnDesc= selhavalo, pokud ve vnoreme grepu byly specialni znaky pro shell jako ?? $$. Opraveno nastavenim< set noglob
 
 
 set logfile="$alephe_scratch/obalkyknih_toc2load.log"
@@ -13,6 +17,7 @@ set datum=`date +%Y%m%d`
 set bibBaseL=`echo $bibBase | aleph_tr -l`
 set backupfile="$alephe_dev/$bibBaseL/scratch/obalkyknih_toc2load_$datum.backup"
 set recordLimit=43500 #max lenth of record/DOC in Aleph. In versions 16.02-22.0.3, it is 45,000 bytes. !!! However, the check is this script does nor counr CAT fields. as they are not exported by print-03. So this limit should be lower than the real. If the lenght limit is still exceeded, import manage-18 warns and this worn is moved to the toc_import log and mailed. If the limit is exceeded by this setting, imported TOC is cut at its end.
+set base2exclude='Proquest Academic Complete' #ver 1.4
 
 echo "-----------------------------------------------------------" | tee -a $logfile
 echo "start - `date`" | tee -a $logfile
@@ -72,8 +77,28 @@ foreach file ($dirwithTOCs/TOC*)
       mv $file "$dirwithTOCs/save-$datum/"
       continue
    endif 
+   
+   #TODO 20220516 pridano vylouceni pro zaznamy z rychle katalogizace, zpracovavaji takto fond Jacques Rupnik.
+   #      pokud to jednou pomine, lze nasl. podminku odstranit.   Matyas B.
+   if ( `grep "^$sysno UPL.*Rupnik" $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp -i -c | bc` != 0 ) then
+      echo "NOTE - record with sysno $sysno belongs to J. Rupnik collection fast cataloguing. Skipping." | tee -a $logfile
+      mv $file "$dirwithTOCs/save-$datum/"
+      continue
+   endif 
+   #
+   
+   #ver 1.4
+   if ( `grep "^$sysno BAS.*$base2exclude" $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp -i -c | bc` != 0 ) then
+      echo "NOTE - record with sysno $sysno belongs to base '$base2exclude' that was set to be excluded from TOC import. Skipping." | tee -a $logfile
+      mv $file "$dirwithTOCs/save-$datum/"
+      continue
+   endif
+   #ver 1.4 end
+   
    if ( `grep "^$sysno TOC" $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp -c | bc` != 0 ) then
       echo "Record $sysno ($bibBase) has already a TOC field, skipping." | tee -a $logfile
+
+
       #kontrola jestli jednotky nejsou ruzne u videdilnych nebo pokracujicich dokumentu, Identifikujici se pomoci pole Z30-2 (2.ind. = 2 )
       if ( `grep "^$sysno Z30-2" $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp -c | bc` >1 ) then
          #20210204 pridana jeste podminka, ze ople TOC uz neni vynulovane
@@ -98,6 +123,9 @@ foreach file ($dirwithTOCs/TOC*)
    cat $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp >>$backupfile
    #create temporary awk file and rearrange and check the TOC
    awk 'NR==1{sub(/^\xef\xbb\xbf/,"")}1' $file >$file.tmp
+#20240321 vylouceni pomocneho znaku (pocatek oddilu??] na zacatku obsahu
+   sed -i 's/ď»ż//' $file.tmp
+
    mv $file.tmp $file
    echo 'BEGIN {FS=""; x=1; repeated=""; nl=""; lineno=1;}\
 {\
@@ -116,8 +144,9 @@ for (i=1;i<=NF;i++) {\
    }\
 }\
 END { print "TOC   L "repeated"$$a"nl; }' >$alephe_dev/$bibBaseL/scratch/obalkyknih_toc2load.awk.tmp
-#nasledne: 1. odstrani opakujici se znaky (tecky, mezery), 2. rozdeli text na pole s 1500 znaky (nedeli slova, 3. prida sysno,  4. odstrani Byte-order mark na zacatku 
-   sed 's/\([[:punct:]]\)\1\{3,\}/\1\1\1/g' $file | sed 's/\([[:blank:]]\)\1\+/\1/g' | perl -p -e 's/\n/ \/\/ /' | awk -f $alephe_dev/$bibBaseL/scratch/obalkyknih_toc2load.awk.tmp | sed "s/^/$sysno /" | sed 's/\/\/ *$//g' >$alephe_dev/$bibBaseL/scratch/toc2import.tmp
+#nasledne: 1. odstrani opakujici se znaky (tecky, mezery), 2. rozdeli text na pole s 1500 znaky (nedeoli slova, 3. prida sysno,  4. odstrani Byte-order mark na zacatku 
+   #ver 1.3 prideano dirwithTOCs/repair_double_encoding
+   sed 's/\([[:punct:]]\)\1\{3,\}/\1\1\1/g' $file | sed 's/\([[:blank:]]\)\1\+/\1/g' | perl -p -e 's/\n/ \/\/ /' | sed 's/\- \/\/ //g' | $dirwithTOCs/repair_double_encoding | awk -f $alephe_dev/$bibBaseL/scratch/obalkyknih_toc2load.awk.tmp | sed "s/^/$sysno /" | sed 's/\/\/ *$//g' >$alephe_dev/$bibBaseL/scratch/toc2import.tmp
    if (! -e $alephe_dev/$bibBaseL/scratch/toc2import.tmp ) then
       echo "ERROR while importing file $file (sysno $sysno) - check and reaarange to aleph seq format failed. Skipping this sysno."
       mv $file "$dirwithTOCs/save-$datum/"
@@ -127,8 +156,6 @@ END { print "TOC   L "repeated"$$a"nl; }' >$alephe_dev/$bibBaseL/scratch/obalkyk
    @ recLength=`awk '{print substr($0,19);}' $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp | wc -c | bc`
    #RC 20210315 @ tocLength=`cat $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp | wc -c | bc`
    @ tocLength=`cat $alephe_dev/$bibBaseL/scratch/toc2import.tmp | wc -c | bc`
-#TODO DEBUG
-echo "DEBUG : recLength is $recLength, tocLength is $tocLength" |  tee -a $logfile
 
 
 #RC 20210315 - whole check of record length has been replace (the followinf if)
@@ -160,6 +187,7 @@ echo "DEBUG : recLength is $recLength, tocLength is $tocLength" |  tee -a $logfi
    #kontrola na vice isbn v souboru - prida alert do logu, doplneno 20150609
    if ( `grep "^$sysno 020" $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp -c | bc` >1 ) then
       #20210204 pridany hodnoty podpole q do warning hlaseni pro lepsi zpracovani
+      set noglob #ver 1.4.1. 20240801
       set isbnDesc=`grep "^$sysno 020" $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp | grep -o '\$\$q.*$' | tr -d '\n' `
       echo "WARNING - record with sysno $sysno has more than one ISBN - it's worthy of a check : $isbnDesc" | tee -a $logfile
       echo "WARNING - record with sysno $sysno has more than one ISBN - it's worthy of a check : $isbnDesc" >>$alephe_dev/$bibBaseL/scratch/toc2import.warn
