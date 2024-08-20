@@ -10,6 +10,8 @@ set mailAddr2="matyas.bajger@osu.cz" #2. adresa pro totez, ponech prazdne, pokud
 #ver 1.3 OCR obsahy jsou casto double encodovane utf. Pomoci externiho perl s/replace skriptu se jednotlive znaky anharzuji.
 #ver 1.4 Lze vyloucit urcitou jednu logickou bazi v poli BAS, do niz obsahz nebudou pridavany. Jeji jmeno definovano nize v promenne basw2exclude. 20230120
 #ver 1.4.1 20240801 plneni promenne set isbnDesc= selhavalo, pokud ve vnoreme grepu byly specialni znaky pro shell jako ?? $$. Opraveno nastavenim< set noglob
+#ver 1.4.2 20240820 z importovanych textu obsahu je odstranovan znak BOM, resp. ZWNBSP - nahradi se mezerou
+
 
 
 set logfile="$alephe_scratch/obalkyknih_toc2load.log"
@@ -64,17 +66,17 @@ foreach file ($dirwithTOCs/TOC*)
    csh -f $aleph_proc/p_print_03 "$bibBase,obalky_toc.tmp,ALL,,,,,,,,obalky_toc_exp.tmp,A,,Z30,,N," >/dev/null
    if (! -e $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp ) then
       echo "ERROR - export p_print_03 for sysno $sysno failed!. Skipping (not importing) this sysno/TOC." | tee -a $logfile
-      mv $file "$dirwithTOCs/save-$datum/"
+      mv $file "$TOCs/save-$datum/"
       continue
    endif
    if ( -z $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp ) then
       echo "WARNING - sysno $sysno does not exist in the $bibBase base, skipping."  | tee -a $logfile
-      mv $file "$dirwithTOCs/save-$datum/"
+      mv $file "$TOCs/save-$datum/"
       continue
    endif
    if ( `grep "^$sysno DEL" $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp -c | bc` != 0 ) then
       echo "WARNING - record with sysno $sysno has been already deleted! Skipping." | tee -a $logfile
-      mv $file "$dirwithTOCs/save-$datum/"
+      mv $file "$TOCs/save-$datum/"
       continue
    endif 
    
@@ -82,7 +84,7 @@ foreach file ($dirwithTOCs/TOC*)
    #      pokud to jednou pomine, lze nasl. podminku odstranit.   Matyas B.
    if ( `grep "^$sysno UPL.*Rupnik" $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp -i -c | bc` != 0 ) then
       echo "NOTE - record with sysno $sysno belongs to J. Rupnik collection fast cataloguing. Skipping." | tee -a $logfile
-      mv $file "$dirwithTOCs/save-$datum/"
+      mv $file "$TOCs/save-$datum/"
       continue
    endif 
    #
@@ -90,7 +92,7 @@ foreach file ($dirwithTOCs/TOC*)
    #ver 1.4
    if ( `grep "^$sysno BAS.*$base2exclude" $alephe_dev/$bibBaseL/scratch/obalky_toc_exp.tmp -i -c | bc` != 0 ) then
       echo "NOTE - record with sysno $sysno belongs to base '$base2exclude' that was set to be excluded from TOC import. Skipping." | tee -a $logfile
-      mv $file "$dirwithTOCs/save-$datum/"
+      mv $file "$TOCs/save-$datum/"
       continue
    endif
    #ver 1.4 end
@@ -146,7 +148,10 @@ for (i=1;i<=NF;i++) {\
 END { print "TOC   L "repeated"$$a"nl; }' >$alephe_dev/$bibBaseL/scratch/obalkyknih_toc2load.awk.tmp
 #nasledne: 1. odstrani opakujici se znaky (tecky, mezery), 2. rozdeli text na pole s 1500 znaky (nedeoli slova, 3. prida sysno,  4. odstrani Byte-order mark na zacatku 
    #ver 1.3 prideano dirwithTOCs/repair_double_encoding
-   sed 's/\([[:punct:]]\)\1\{3,\}/\1\1\1/g' $file | sed 's/\([[:blank:]]\)\1\+/\1/g' | perl -p -e 's/\n/ \/\/ /' | sed 's/\- \/\/ //g' | $dirwithTOCs/repair_double_encoding | awk -f $alephe_dev/$bibBaseL/scratch/obalkyknih_toc2load.awk.tmp | sed "s/^/$sysno /" | sed 's/\/\/ *$//g' >$alephe_dev/$bibBaseL/scratch/toc2import.tmp
+   #sed 's/\([[:punct:]]\)\1\{3,\}/\1\1\1/g' $file | sed 's/\([[:blank:]]\)\1\+/\1/g' | perl -p -e 's/\n/ \/\/ /' | sed 's/\- \/\/ //g' | $dirwithTOCs/repair_double_encoding | awk -f $alephe_dev/$bibBaseL/scratch/obalkyknih_toc2load.awk.tmp | sed "s/^/$sysno /" | sed 's/\/\/ *$//g' >$alephe_dev/$bibBaseL/scratch/toc2import.tmp
+   #ver 1.4.2 odstraneni ZWNBSP
+   sed 's/\([[:punct:]]\)\1\{3,\}/\1\1\1/g' $file | sed 's/\([[:blank:]]\)\1\+/\1/g' | perl -p -e 's/\n/ \/\/ /' | sed 's/\- \/\/ //g' | $dirwithTOCs/repair_double_encoding | awk -f $alephe_dev/$bibBaseL/scratch/obalkyknih_toc2load.awk.tmp | sed "s/^/$sysno /" | sed 's/\/\/ *$//g' | sed 's/\xEF\xBB\xBF/ /g' >$alephe_dev/$bibBaseL/scratch/toc2import.tmp
+
    if (! -e $alephe_dev/$bibBaseL/scratch/toc2import.tmp ) then
       echo "ERROR while importing file $file (sysno $sysno) - check and reaarange to aleph seq format failed. Skipping this sysno."
       mv $file "$dirwithTOCs/save-$datum/"
