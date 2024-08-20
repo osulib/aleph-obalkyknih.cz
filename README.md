@@ -20,6 +20,14 @@ Structure of functions rewritten, no functional changes.
 ### Version 1.3
 Added viewing of digital versions from Czech digital libraries Kramerius (published in API). Both for full OPAC view, as well as for short view (table of results). See description [Digitální objekty z dig. knihoven Kramerius](https://github.com/osulib/aleph-obalkyknih.cz/wiki/Digit%C3%A1ln%C3%AD-objekty-z-dig.-knihoven-Kramerius)
 
+### Version 1.4 
+It is possible to exclude logical base according to the value set in the field BAS. No TOCs will be added to the records from this base. The base name is defined in the variable basw2exclude. 20230120
+###1.4.1 
+Repair of filling the variable isbnDesc (had failed if the content includes special characters as $$ or ??)
+#331.4.2
+The "character" BOM / ZWNBSP is now removed from the TOCs content
+
+
 ### National Authorities of the CR 
 * [Enhancement of personal authorities OPAC view](https://github.com/osulib/aleph-obalkyknih.cz/wiki/obalkyknih.cz-Authorities---enhancement-of-personal-records)
 
