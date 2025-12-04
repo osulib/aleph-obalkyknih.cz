@@ -417,10 +417,10 @@ obalkyKnih.showDigObj = function(digObj) {
         const showDNNT = true ; //true hodnota, pokud zobrazovat DNNT; 
         const homeSigla = '' ; //zpravidla domovska knihovna. Ukazuje se jako prvni a vzdy i v pripade autorizovaneho pristupu
         const showNonPublicSiglas = []; //pole obsahujici sigly, pro nez bude zobrazovan i autorizovany pristup
-	const linkTextHome = 'Digitalised version in our digital library;'; //text pro zobrazeni ve vlastni knihovne dle promenne homeSigla
-        const linkTextPublic = 'Digitalised version' //text pro public verze v jinych knihovnach
-        const linkTextNonPublic = 'Digitalised version - limited access'; //text pro public verze v jinych knihovnach
-        const linkTextDnnt = 'Digitalised version in library of books not available on market (limited access)'; //text pro public verze v jinych knihovnach
+	const linkTextHome = 'Digitized version in our digital library;'; //text pro zobrazeni ve vlastni knihovne dle promenne homeSigla
+        const linkTextPublic = 'Digitized version' //text pro public verze v jinych knihovnach
+        const linkTextNonPublic = 'Digitized version - limited access'; //text pro public verze v jinych knihovnach
+        const linkTextDnnt = 'Digitized version in out of commerce works library (limited access)'; //text pro public verze v jinych knihovnach
         const showDnntTerminal = true; //ver 1.3.3 pokud je true, zobrazi se v opac i dnnt ve verzi terminal/studovna s patricnym upozornenim
         const dnntTerminalEl = '<br>Accesible in study rooms only.<a href="#" class="tipr"><span>The document can be viewed in Faculty of Arts study room, Faculty of Education study room, and Faculty of Science study room. As to its license with copyright holders, it belongs to works that cannot be available online, but only at dedicated terminals in the library.</span><img alt="?" src="/exlibris/aleph/u23_1/alephe/www_f_cze/icon/question_mark.png" width="15"></a>  '; //ver 1.3.3 upozorneni, pokud je rezim terminal/studovna. Nadefinovat jako kompletni html element, nejen plaintext
 
