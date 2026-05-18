@@ -19,7 +19,7 @@
 //		             1 ... free available
 //	                     5 ... dnnt terminal (in study room)
 //	                     9 ... available in study room(s) of the originial (digitalising) library. No online, no dnnt.
-
+//ver 1.4.1 remove collective isbns from multi-volume records (if there are more than 1 isbn), identified by text after isbn
 
 
 var obalkyKnih=new Object();
@@ -38,7 +38,19 @@ identifiers.getISBNs = function() { //najde ISBN (10+13), ISSN i ISMNa, vraci je
       if ( isbnF[i].match(/^[\d]{4}\-[\dxX]{4}.{1}/) ) { isbnF[i]=isbnF[i].slice(0,-1); } //oprava issn - posledni znak rusil. 29.2/2016
       if ( isbnF[i] === isbnF[i-1] ) isbnF.splice(i--, 1);
       }
-   //isbn validity check
+      //remove isbn from more volumes - "soubor" if there are more isbns than one, ver 1.4.1 20260518
+        const moreVolumesText='soubor';
+        if ( isbnF.length > 1 ) {
+                for ( var i=0; i<isbnF.length; i++ ) {
+                        let isbnRegexMoreVolumes = new RegExp(isbnF[i]+'.{0,20}'+moreVolumesText);
+                        if ( bodyText.match(isbnRegexMoreVolumes) )  {
+                                isbnF.splice(i, 1);
+                                i--;
+                        }
+                }
+        }
+
+	//isbn validity check
    for ( i=0; i<isbnF.length; i++ ) {
       var isbn2check = (isbnF[i].replace(/^\s?M\-?/,'979-0-')).replace(/[^\dxX]/g,'');
       var checkSum=0;
